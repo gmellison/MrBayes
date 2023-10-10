@@ -1,4 +1,4 @@
-#ifndef __MODEL_H__
+#ifnde __MODEL_H__
 #define __MODEL_H__
 
 int     AreDoublesEqual (MrBFlt x, MrBFlt y, MrBFlt tol);

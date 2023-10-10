@@ -153,6 +153,8 @@ int       Likelihood_Res_SSE (TreeNode *p, int division, int chain, MrBFlt *lnL,
 #endif
 int       Likelihood_Std (TreeNode *p, int division, int chain, MrBFlt *lnL, int whichSitePats);
 int       Likelihood_Cont (TreeNode *p, int division, int chain, MrBFlt *lnL, int whichSitePats);
+
+int       TiProbs_DiMethyl(TreeNode *p, int division, int chain);
 int       TiProbs_Fels (TreeNode *p, int division, int chain);
 int       TiProbs_Gen (TreeNode *p, int division, int chain);
 int       TiProbs_GenCov (TreeNode *p, int division, int chain);
@@ -160,5 +162,6 @@ int       TiProbs_Hky (TreeNode *p, int division, int chain);
 int       TiProbs_JukesCantor (TreeNode *p, int division, int chain);
 int       TiProbs_Std (TreeNode *p, int division, int chain);
 int       TiProbs_Res (TreeNode *p, int division, int chain);
+
 
 #endif  /* __LIKELIHOOD_H__ */

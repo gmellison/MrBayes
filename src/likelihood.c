@@ -66,6 +66,7 @@ int       RemoveNodeScalers_AVX(TreeNode *p, int division, int chain);
 int       SetBinaryQMatrix (MrBFlt **a, int whichChain, int division);
 int       SetNucQMatrix (MrBFlt **a, int n, int whichChain, int division, MrBFlt rateMult, MrBFlt *rA, MrBFlt *rS);
 int       SetStdQMatrix (MrBFlt **a, int nStates, MrBFlt *bs, int cType);
+int       SetDiMethylQMatrix (MrBFlt **a, int nStates, int whichChain, int division, MrBFlt rateMult, MrBFlt *rA, MrBFlt *rS);
 int       SetProteinQMatrix (MrBFlt **a, int n, int whichChain, int division, MrBFlt rateMult);
 int       UpDateCijk (int whichPart, int whichChain);
 
