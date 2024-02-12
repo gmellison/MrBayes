@@ -7864,10 +7864,6 @@ void LaunchLogLikeForDivision(int chain, int d, MrBFlt* lnL)
     m = &modelSettings[d];
     tree = GetTree(m->brlens, chain, state[chain]);
     
-
-    m = &modelSettings[d];
-    tree = GetTree(m->brlens, chain, state[chain]);
-    
     if (m->upDateCijk == YES)
         {
         if (UpDateCijk(d, chain)== ERROR)
