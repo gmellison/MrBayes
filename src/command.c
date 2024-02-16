@@ -50,7 +50,7 @@
 
 
 #define NUMCOMMANDS                     62 + 3    /* The total number of commands in the program  */
-#define NUMPARAMS                       289   /* The total number of parameters  */
+#define NUMPARAMS                       290   /* The total number of parameters  */
 #define PARAM(i, s, f, l)               p->string = s;    \
                                         p->fp = f;        \
                                         p->valueList = l; \
@@ -330,8 +330,8 @@ CmdType     commands[] =
             { 30,           "Pairs", YES,           DoPairs,  1,                                                                                             {92},    32768,        "Defines nucleotide pairs (doublets) for stem models",  IN_CMD, SHOW },
             { 31,       "Partition",  NO,       DoPartition,  1,                                                                                             {16},        4,                              "Assigns a character partition",  IN_CMD, SHOW },
             { 32,            "Plot",  NO,            DoPlot,  6,                                                                        {106,107,108,109,224,225},       36,                        "Plots parameters from MCMC analysis",  IN_CMD, SHOW },
-            { 33,           "Prset",  NO,           DoPrset, 44,  {35,36,37,38,39,41,42,43,44,54,64,67,68,69,70,71,77,100,101,102,103,104,110,111,117,120,121,133,
-                                                                                                 168,172,173,174,183,184,185,218,241,246,247,251,254,269,271,272},        4,                         "Sets the priors for the parameters",  IN_CMD, SHOW },
+            { 33,           "Prset",  NO,           DoPrset, 46,  {35,36,37,38,39,41,42,43,44,54,64,67,68,69,70,71,77,100,101,102,103,104,110,111,117,120,121,133,
+                                                                                         168,172,173,174,183,184,185,218,241,246,247,251,254,269,271,272,288,289},        4,                         "Sets the priors for the parameters",  IN_CMD, SHOW },
             { 34,         "Propset",  NO,         DoPropset,  1,                                                                                            {186},        4,          "Sets proposal probabilities and tuning parameters",  IN_CMD, SHOW },
             { 35,            "Quit",  NO,            DoQuit,  0,                                                                                             {-1},       32,                                          "Quits the program",  IN_CMD, SHOW },
             { 36,          "Report",  NO,          DoReport,  9,                                                            {122,123,124,125,134,135,136,192,217},        4,                 "Controls how model parameters are reported",  IN_CMD, SHOW },
@@ -735,7 +735,7 @@ int CharacterCode (char ch, int *charCode, int chType)
             return (ERROR);
             }
         }
-    else if (chType == METHYL)
+    else if (chType == DIMETHYL)
         {
         if ((*charCode = MethylID (ch)) == -1)
             {
@@ -4136,8 +4136,8 @@ int DoFormatParm (char *parmName, char *tkn)
                             dataType = RESTRICTION;
                         else if (!strcmp(tempStr, "Standard"))
                             dataType = STANDARD;
-                        else if (!strcmp(tempStr, "Methyl"))
-                            dataType = METHYL;
+                        else if (!strcmp(tempStr, "Dimethyl"))
+                            dataType = DIMETHYL;
                         else if (!strcmp(tempStr, "Continuous"))
                             {
                             MrBayesPrint ("%s   MrBayes currently does not support the use of the 'Continuous' datatype\n", spacer);
@@ -7173,7 +7173,7 @@ int DoShowMatrix (void)
                     MrBayesPrint ("%c", WhichStand(matrix[pos(i,j,numChar)]));
                 else if (ct == RESTRICTION)
                     MrBayesPrint ("%c", WhichRes(matrix[pos(i,j,numChar)]));
-                else if (ct == METHYL)
+                else if (ct == DIMETHYL)
                     MrBayesPrint ("%c", WhichMethyl(matrix[pos(i,j,numChar)]));
                 else if (ct == CONTINUOUS)
                     {
@@ -13640,7 +13640,7 @@ else if (!strcmp(helpTkn, "Set"))
    NO if character is unambiguous, missing or gapped */ 
 int IsAmbig (int charCode, int dType)
 {
-    if (dType == DNA || dType == RNA || dType == STANDARD || dType == RESTRICTION || dType == PROTEIN || dType == METHYL)
+    if (dType == DNA || dType == RNA || dType == STANDARD || dType == RESTRICTION || dType == PROTEIN || dType == DIMETHYL)
         {
         if (charCode != MISSING && charCode != GAP)
             if (NBits(charCode) > 1)
@@ -13730,7 +13730,7 @@ int IsMissing (int charCode, int dType)
         if (charCode == 15 || charCode == 16)
             return (YES);
         }
-    else if (dType == METHYL)
+    else if (dType == DIMETHYL)
         {
         if (charCode == MISSING || charCode == GAP)
             return (YES);
@@ -13802,7 +13802,7 @@ int IsWhite (char c)
 
 int MethylID (char n)
 {
-    if (n == 'U' || n == 'u')
+    if (n == 'E' || n == 'e')
         {
         return 1;
         }
@@ -14555,7 +14555,7 @@ void SetUpParms (void)
     PARAM   (4, "Ntax",           DoDimensionsParm,  "\0");
     PARAM   (5, "Nchar",          DoDimensionsParm,  "\0");
     PARAM   (6, "Interleave",     DoFormatParm,      "Yes|No|\0");
-    PARAM   (7, "Datatype",       DoFormatParm,      "Dna|Rna|Protein|Restriction|Standard|Continuous|Mixed|Methyl|\0");
+    PARAM   (7, "Datatype",       DoFormatParm,      "Dna|Rna|Protein|Restriction|Standard|Continuous|Mixed|Dimethyl|\0");
     PARAM   (8, "Gap",            DoFormatParm,      "\0");
     PARAM   (9, "Missing",        DoFormatParm,      "\0");
     PARAM  (10, "Matchchar",      DoFormatParm,      "\0");
@@ -14576,7 +14576,7 @@ void SetUpParms (void)
     PARAM  (25, "Starttree",      DoMcmcParm,        "Random|Current|User|Parsimony|NJ|\0");
     PARAM  (26, "Nperts",         DoMcmcParm,        "\0");
     PARAM  (27, "Savebrlens",     DoMcmcParm,        "Yes|No|\0");
-    PARAM  (28, "Nucmodel",       DoLsetParm,        "4by4|Doublet|Codon|Protein|Methyl|Dimethyl|\0");
+    PARAM  (28, "Nucmodel",       DoLsetParm,        "4by4|Doublet|Codon|Protein|\0");
     PARAM  (29, "Nst",            DoLsetParm,        "1|2|6|Mixed|\0");
     PARAM  (30, "Aamodel",        DoLsetParm,        "Poisson|Equalin|Jones|Dayhoff|Mtrev|Mtmam|Wag|Rtrev|Cprev|Vt|Blosum|Blossum|LG|\0");
     PARAM  (31, "Parsmodel",      DoLsetParm,        "Yes|No|\0");
@@ -14836,7 +14836,8 @@ void SetUpParms (void)
     PARAM (285, "Alpha",          DoPwSetParm,       "\0"); 
     PARAM (286, "Relrates",       DoPwSetParm,       "\0"); 
     PARAM (287, "Pairwise",       DoLsetParm,        "Yes|No|\0"); 
-    PARAM (288, "PwAlphaLike",        DoLsetParm,        "None|Full|Triplet|\0"); 
+    PARAM (288, "DimAlpha",          DoPrsetParm,       "Dirichlet|Fixed|\0"); 
+    PARAM (289, "DimBeta",           DoPrsetParm,       "Dirichlet|Fixed|\0"); 
 
 
     /* NOTE: If a change is made to the parameter table, make certain you change
@@ -15088,10 +15089,10 @@ int StateCode_NUC4 (int n)
 
 
 // Greg
-int StateCode_METHYL (int n)
+int StateCode_DIMETHYL (int n)
 {
     if (n == 0)
-        return 'N';
+        return 'E';
     else if (n == 1)
         return 'M';
     else if (n == 2)
@@ -15437,7 +15438,7 @@ char WhichNuc (int x)
 char WhichMethyl (int x)
 {
     if (x == 1)
-            return('U');
+            return('E');
     else if (x == 2)
             return('M');
     else if (x == 4)

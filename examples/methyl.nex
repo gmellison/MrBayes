@@ -1,0 +1,22 @@
+#NEXUS
+
+begin data;
+    dimensions ntax=5 nchar=15;
+    format datatype=dimethyl interleave=no gap=-;
+    matrix
+Bingus         EEMMEMDEMEEEEMD
+Bongus         EEMDEMDEMEMEEMD
+Tugboat        EEMDEMDEDDMMDMD
+Coco           EEMDEMDEDDMMDMD
+Greg           EEMDMMDEDDMEDMD
+    ;
+end;
+
+begin mrbayes;
+    lset rates=gamma;
+    prset dimbeta=dirichlet(2.2) dimalpha=fixed(1.2);
+    showmodel;
+    mcmc ngen=1000 samplefreq=100 burnin=100;
+    sump;
+    sumt;
+end;

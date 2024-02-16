@@ -17114,10 +17114,9 @@ int RunChain (RandLong *seed)
                 {
                  if (abortMove == NO)
                     {
-                    if (hybridAlphaStep == YES) {
+                    if (hybridAlphaStep == YES) 
                         lnLikeAlMove = LogLike(chn);
                     lnLike = LogLikePairwise(chn);                
-
                     }
                 }
             else 
@@ -18595,6 +18594,27 @@ int SetLikeFunctions (void)
                 m->StateCode      = &StateCode_Std;
                 m->PrintAncStates = &PrintAncStates_Bin;
                 m->PrintSiteRates = &PrintSiteRates_Gen;
+                }
+            }
+        else if (m->dataType == DIMETHYL)
+            {
+            if (m->parsModelId == YES)
+                {
+                m->Likelihood = &Likelihood_Pars;
+                }
+            else
+                {
+                    /*
+                m->CondLikeDown   = &CondLikeDown_Dimethyl;
+                m->CondLikeRoot   = &CondLikeRoot_Dimethyl;
+                m->CondLikeScaler = &CondLikeScaler_Dimethyl;
+                m->Likelihood     = &Likelihood_Dimethyl;
+                m->TiProbs        = &TiProbs_Dimethyl;
+                m->CondLikeUp     = &CondLikeUp_Dimethyl;
+                m->StateCode      = &StateCode_Dimethyl;
+                m->PrintAncStates = &PrintAncStates_Dimethyl;
+                m->PrintSiteRates = &PrintSiteRates_Dimethyl;
+                  */
                 }
             }
         else if (m->dataType == STANDARD)

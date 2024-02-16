@@ -245,7 +245,7 @@ typedef float CLFlt;        /* single-precision float used for cond likes (CLFlt
 #define STANDARD                5
 #define MIXED                   6
 #define CONTINUOUS              7
-#define METHYL                  8
+#define DIMETHYL                8
 
 #define AAMODEL_POISSON         0
 #define AAMODEL_JONES           1
@@ -265,8 +265,7 @@ typedef float CLFlt;        /* single-precision float used for cond likes (CLFlt
 #define NUCMODEL_DOUBLET        1
 #define NUCMODEL_CODON          2
 #define NUCMODEL_AA             3
-#define NUCMODEL_METHYL         4
-#define NUCMODEL_DIMETHYL       5
+#define NUCMODEL_DIMETHYL       4
 
 #define NST_MIXED              -1  /* anything other than 1, 2, or 6 */
 
@@ -434,7 +433,7 @@ typedef float CLFlt;        /* single-precision float used for cond likes (CLFlt
 #define UNLINKED                1
 
 /*paramType*/
-#define NUM_LINKED              36
+#define NUM_LINKED              37
 #define P_TRATIO                0
 #define P_REVMAT                1
 #define P_OMEGA                 2
@@ -471,6 +470,7 @@ typedef float CLFlt;        /* single-precision float used for cond likes (CLFlt
 #define P_MIXEDBRCHRATES        33
 #define P_WNVAR                 34
 #define P_WNBRANCHRATES         35
+#define P_DIMETHYL              36
 /* NOTE: If you add another parameter, change NUM_LINKED */
 
 // #define CPPm                 0       /* CPP rate multipliers */
@@ -895,6 +895,11 @@ typedef struct param
 #define BMSIGMA_FIX                     168
 #define EXTRATE_EXP                     169
 #define FOSLRATE_EXP                    170
+#define DIMETHYL_ALPHA_DIR              171
+#define DIMETHYL_ALPHA_FIX              172
+#define DIMETHYL_BETA_DIR               173
+#define DIMETHYL_BETA_FIX               174
+
 
 #if defined (BEAGLE_ENABLED)
 #define MB_BEAGLE_SCALE_ALWAYS          0
@@ -1041,9 +1046,13 @@ typedef struct model
     MrBFlt      aaRevMatFix[190];
     MrBFlt      aaRevMatDir[190];
 
-    char        methylRevMatPr[100];
-    MrBFlt      methylRevMatFix[3];
-    MrBFlt      methylRevMatDir[190];
+    char        dimethylAlphaPr[100];
+    MrBFlt      dimethylAlphaFix;
+    MrBFlt      dimethylAlphaDir;
+
+    char        dimethylBetaPr[100];
+    MrBFlt      dimethylBetaFix;
+    MrBFlt      dimethylBetaDir;
 
     char        omegaPr[100];      /* prior for omega                              */
     MrBFlt      omegaFix;
@@ -1318,6 +1327,9 @@ typedef struct modelinfo
     Param       *clockRate;                 /* ptr to clock rate parameter              */
     Param       *brownCorr;                 /* ptr to Brownian motion correlation parameter */
     Param       *brownSigma;                /* ptr to Brownian motion scale parameter   */
+
+    Param       *dimethylAlpha;
+    Param       *dimethylBeta;
 
     /* Information about characters and transformations */
     int         numChars;                   /* number of compressed characters          */
