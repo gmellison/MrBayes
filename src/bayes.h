@@ -433,7 +433,7 @@ typedef float CLFlt;        /* single-precision float used for cond likes (CLFlt
 #define UNLINKED                1
 
 /*paramType*/
-#define NUM_LINKED              37
+#define NUM_LINKED              38
 #define P_TRATIO                0
 #define P_REVMAT                1
 #define P_OMEGA                 2
@@ -470,7 +470,9 @@ typedef float CLFlt;        /* single-precision float used for cond likes (CLFlt
 #define P_MIXEDBRCHRATES        33
 #define P_WNVAR                 34
 #define P_WNBRANCHRATES         35
-#define P_DIMETHYL              36
+#define P_DIMETHYLALPHA         36
+#define P_DIMETHYLBETA          37
+
 /* NOTE: If you add another parameter, change NUM_LINKED */
 
 // #define CPPm                 0       /* CPP rate multipliers */

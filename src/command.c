@@ -4172,7 +4172,9 @@ int DoFormatParm (char *parmName, char *tkn)
                             dataType = RESTRICTION;
                         else if (!strcmp(tempStr, "Standard"))
                             dataType = STANDARD;
-                        else if (!strcmp(tempStr, "Continuous"))
+                        else if (!strcmp(tempStr, "Dimethyl"))
+                            dataType = DIMETHYL;
+                         else if (!strcmp(tempStr, "Continuous"))
                             {
                             MrBayesPrint ("%s   MrBayes currently does not support the use of the 'Continuous' datatype\n", spacer);
                             return ERROR;
@@ -14836,8 +14838,8 @@ void SetUpParms (void)
     PARAM (285, "Alpha",          DoPwSetParm,       "\0"); 
     PARAM (286, "Relrates",       DoPwSetParm,       "\0"); 
     PARAM (287, "Pairwise",       DoLsetParm,        "Yes|No|\0"); 
-    PARAM (288, "DimAlpha",          DoPrsetParm,       "Dirichlet|Fixed|\0"); 
-    PARAM (289, "DimBeta",           DoPrsetParm,       "Dirichlet|Fixed|\0"); 
+    PARAM (288, "DimethylAlpha",          DoPrsetParm,       "Dirichlet|Fixed|\0"); 
+    PARAM (289, "DimethylBeta",           DoPrsetParm,       "Dirichlet|Fixed|\0"); 
 
 
     /* NOTE: If a change is made to the parameter table, make certain you change
