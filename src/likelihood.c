@@ -10568,7 +10568,7 @@ int TiProbs_JukesCantor (TreeNode *p, int division, int chain)
 int TiProbs_Dimethyl (TreeNode *p, int division, int chain)
 {
     int         i, j, k, index;
-    MrBFlt      t, alpha, beta, pis[3],
+    MrBFlt      t, dimRates[2], pis[3], alpha, beta,
                 *catRate, baseRate, theRate, length, denom;
     CLFlt       *tiP;
     ModelInfo   *m;
@@ -10579,8 +10579,9 @@ int TiProbs_Dimethyl (TreeNode *p, int division, int chain)
     tiP = m->tiProbs[m->tiProbsIndex[chain][p->index]];
 
     /* get revmat rates */
-    alpha =  *GetParamVals (m->dimethylAlpha, chain, state[chain]);
-    beta  =  *GetParamVals (m->dimethylBeta, chain, state[chain]);
+    *dimRates =  *GetParamVals (m->dimethylRate, chain, state[chain]);
+    alpha = dimRates[0];
+    beta = dimRates[1];
    
     denom = (alpha * beta) * (alpha * beta) ; 
     /* get base rate */

@@ -3245,12 +3245,11 @@ int DoLsetParm (char *parmName, char *tkn)
                             modelParams[i].nStates = NumStates (i);
                             
                             /* set state frequencies back to default */
-                            strcpy(modelParams[i].dimethylAlphaPr, "Dirichlet");
-                            strcpy(modelParams[i].dimethylBetaPr,  "Dirichlet");
-                            modelParams[i].dimethylAlphaFix = 0.0;   
-                            modelParams[i].dimethylAlphaDir = 1.0;
-                            modelParams[i].dimethylBetaFix = 0.0;   
-                            modelParams[i].dimethylBetaDir = 1.0;
+                            strcpy(modelParams[i].dimethylRatePr,  "Dirichlet");
+                            modelParams[i].dimethylRateFix[0] = 0.0;
+                            modelParams[i].dimethylRateFix[1] = 0.0;
+                            modelParams[i].dimethylRateDir[0] = 1.0;
+                            modelParams[i].dimethylRateDir[1] = 1.0;
 
                             tempInt = YES;
                             if (nApplied == 0 && numCurrentDivisions == 1)
@@ -5103,7 +5102,7 @@ int DoPrsetParm (char *parmName, char *tkn)
             }
 
         /* set  () *********************************************************/
-        else if (!strcmp(parmName, "DimethylAlpha"))
+        else if (!strcmp(parmName, "Dimethylratepr"))
             {
             if (expecting == Expecting(EQUALSIGN))
                 expecting = Expecting(ALPHA);
@@ -5117,8 +5116,9 @@ int DoPrsetParm (char *parmName, char *tkn)
                         {
                         if ((activeParts[i] == YES || nApplied == 0) && modelParams[i].dataType == DIMETHYL)
                             {
-                            strcpy(modelParams[i].dimethylAlphaPr, tempStr);
-                            modelParams[i].dimethylAlphaDir = 1.0;
+                            strcpy(modelParams[i].dimethylRatePr, tempStr);
+                            modelParams[i].dimethylRateDir[0] = 1.0;
+                            modelParams[i].dimethylRateDir[1] = 1.0;
                             flag = 1;
                             }
                         }
@@ -5131,7 +5131,7 @@ int DoPrsetParm (char *parmName, char *tkn)
                     }
                 else
                     {
-                    MrBayesPrint ("%s   Invalid dimethylAlphaPr argument\n", spacer);
+                    MrBayesPrint ("%s   Invalid dimethylRatePr argument\n", spacer);
                     return (ERROR);
                     }
                 expecting  = Expecting(LEFTPAR);
@@ -5148,7 +5148,7 @@ int DoPrsetParm (char *parmName, char *tkn)
                 for (i=0; i<numCurrentDivisions; i++)
                     {
                     if ((activeParts[i] == YES || nApplied == 0) && modelParams[i].dataType == DIMETHYL )
-                        strcpy (tempStr,modelParams[i].dimethylAlphaPr);
+                        strcpy (tempStr,modelParams[i].dimethylRatePr);
                     }
                 /* find and store the number */
                 sscanf (tkn, "%lf", &tempD);
@@ -5178,125 +5178,13 @@ int DoPrsetParm (char *parmName, char *tkn)
                         return (ERROR);
                         }
                     }
-                expecting = Expecting(COMMA) | Expecting(RIGHTPAR);
-                }
-            else if (expecting == Expecting(COMMA))
-                {
-                expecting  = Expecting(NUMBER);
-                }
-            else if (expecting == Expecting(RIGHTPAR))
-                {
-                nApplied = NumActiveParts ();
-                for (i=0; i<numCurrentDivisions; i++)
-                    {
-                    if ((activeParts[i] == YES || nApplied == 0) && modelParams[i].dataType == DIMETHYL)
-                        {
-                        if (!strcmp(modelParams[i].dimethylAlphaPr,"Dirichlet"))
-                            {
-                            modelParams[i].dimethylAlphaDir = tempD ;
-
-                            if (nApplied == 0 && numCurrentDivisions == 1)
-                                MrBayesPrint ("%s   Setting dimethylAlphaPr to Dirichlet(%1.2lf)\n", spacer, 
-                                modelParams[i].dimethylAlphaDir);
-                            else
-                                MrBayesPrint ("%s   Setting dimethylAlphaPr to Dirichlet(%1.2lf) for partition %d\n", spacer, 
-                                modelParams[i].dimethylAlphaDir, i+1);
-                            }
-                        else if (!strcmp(modelParams[i].dimethylAlphaPr,"Fixed"))
-                            {
-                            modelParams[i].dimethylAlphaFix = tempD;
-                            if (nApplied == 0 && numCurrentDivisions == 1)
-                                MrBayesPrint ("%s   Setting dimethylAlphaPr to Fixed(%1.2lf)\n", spacer, 
-                                modelParams[i].dimethylAlphaFix);
-                            else
-                                MrBayesPrint ("%s   Setting dimethylAlphaPr to Fixed(%1.2lf) for partition %d\n", spacer, 
-                                modelParams[i].dimethylAlphaFix, i+1);
-                            }
-                        }
-                    }
-                expecting = Expecting(PARAMETER) | Expecting(SEMICOLON);
-                }
-            else
-                return (ERROR);
-            }
-
-        /* set  () *********************************************************/
-        else if (!strcmp(parmName, "DimethylBeta"))
-            {
-            if (expecting == Expecting(EQUALSIGN))
-                expecting = Expecting(ALPHA);
-            else if (expecting == Expecting(ALPHA))
-                {
-                if (IsArgValid(tkn, tempStr) == NO_ERROR)
-                    {
-                    nApplied = NumActiveParts ();
-                    flag = 0;
-                    for (i=0; i<numCurrentDivisions; i++)
-                        {
-                        if ((activeParts[i] == YES || nApplied == 0) && modelParams[i].dataType == DIMETHYL)
-                            {
-                            strcpy(modelParams[i].dimethylBetaPr, tempStr);
-                            modelParams[i].dimethylBetaDir = 1.0;
-                            flag = 1;
-                            }
-                        }
-                    if (flag == 0)
-                        {
-                        MrBayesPrint ("%s   Warning: %s can be set only for partition containing either DNA or RNA data.\n", spacer, parmName);
-                        MrBayesPrint ("%s       Currently there is no active partition with such data.\n", spacer);
-                        return (ERROR);
-                        }
-
-                    }
+                tempNum[tempNumStates++] = tempD;
+                if (tempNumStates == 1 && !strcmp(tempStr,"Dirichlet"))
+                    expecting = Expecting(COMMA) | Expecting(RIGHTPAR);
+                else if (tempNumStates < 2)
+                    expecting  = Expecting(COMMA);
                 else
-                    {
-                    MrBayesPrint ("%s   Invalid dimethylBetaPr argument\n", spacer);
-                    return (ERROR);
-                    }
-                expecting  = Expecting(LEFTPAR);
-                tempNumStates = 0;
-                }
-            else if (expecting == Expecting(LEFTPAR))
-                {
-                expecting  = Expecting(NUMBER);
-                }
-            else if (expecting == Expecting(NUMBER))
-                {
-                /* find out what type of prior is being set */
-                nApplied = NumActiveParts ();
-                for (i=0; i<numCurrentDivisions; i++)
-                    {
-                    if ((activeParts[i] == YES || nApplied == 0) && modelParams[i].dataType == DIMETHYL )
-                        strcpy (tempStr,modelParams[i].dimethylBetaPr);
-                    }
-                /* find and store the number */
-                sscanf (tkn, "%lf", &tempD);
-                if (!strcmp(tempStr,"Dirichlet"))
-                    {
-                    if (tempD > ALPHA_MAX)
-                        {
-                        MrBayesPrint ("%s   Dirichlet parameter cannot be greater than %1.2lf\n", spacer, ALPHA_MAX);
-                        return (ERROR);
-                        }
-                    if (tempD < ALPHA_MIN)
-                        {
-                        MrBayesPrint ("%s   Dirichlet parameter cannot be less than %1.2lf\n", spacer, ALPHA_MIN);
-                        return (ERROR);
-                        }
-                    }
-                else if (!strcmp(tempStr,"Fixed"))
-                    {
-                    if (tempD > RATE_MAX)
-                        {
-                        MrBayesPrint ("%s   Rate value cannot be greater than %1.2le\n", spacer, RATE_MAX);
-                        return (ERROR);
-                        }
-                    if (tempD < 0.0001)
-                        {
-                        MrBayesPrint ("%s   Rate value cannot be less than %1.2le\n", spacer, RATE_MIN);
-                        return (ERROR);
-                        }
-                    }
+                    expecting = Expecting(RIGHTPAR);
                 expecting = Expecting(COMMA) | Expecting(RIGHTPAR);
                 }
             else if (expecting == Expecting(COMMA))
@@ -5310,26 +5198,34 @@ int DoPrsetParm (char *parmName, char *tkn)
                     {
                     if ((activeParts[i] == YES || nApplied == 0) && modelParams[i].dataType == DIMETHYL)
                         {
-                        if (!strcmp(modelParams[i].dimethylBetaPr,"Dirichlet"))
+                        if (!strcmp(modelParams[i].dimethylRatePr,"Dirichlet"))
                             {
-                            modelParams[i].dimethylBetaDir = tempD ;
+
+                            for (j=0; j<2; j++)
+                                {
+                                if (tempNumStates==1)
+                                    modelParams[i].dimethylRateDir[j] = tempNum[0]/2.0 ;
+                                else 
+                                    modelParams[i].dimethylRateDir[j] = tempNum[j] ;
+                                }
 
                             if (nApplied == 0 && numCurrentDivisions == 1)
-                                MrBayesPrint ("%s   Setting dimethylBetaPr to Dirichlet(%1.2lf)\n", spacer, 
-                                modelParams[i].dimethylBetaDir);
+                                MrBayesPrint ("%s   Setting dimethylRatePr to Dirichlet(%1.2lf, %1.2lf)\n", spacer, 
+                                modelParams[i].dimethylRateDir[0], modelParams[i].dimethylRateDir[1]);
                             else
-                                MrBayesPrint ("%s   Setting dimethylBetaPr to Dirichlet(%1.2lf) for partition %d\n", spacer, 
-                                modelParams[i].dimethylBetaDir, i+1);
+                                MrBayesPrint ("%s   Setting dimethylRatePr to Dirichlet(%1.2lf, %1.2lf) for partition %d\n", spacer, 
+                                modelParams[i].dimethylRateDir[0], modelParams[i].dimethylRateDir[1], i+1);
                             }
-                        else if (!strcmp(modelParams[i].dimethylBetaPr,"Fixed"))
+                        else if (!strcmp(modelParams[i].dimethylRatePr,"Fixed"))
                             {
-                            modelParams[i].dimethylBetaFix = tempD;
+                            for (j=0; j<2; j++)
+                                modelParams[i].dimethylRateFix[j] = tempNum[j];
                             if (nApplied == 0 && numCurrentDivisions == 1)
-                                MrBayesPrint ("%s   Setting dimethylBetaPr to Fixed(%1.2lf)\n", spacer, 
-                                modelParams[i].dimethylBetaFix);
+                                MrBayesPrint ("%s   Setting dimethylRatePr to Fixed(%1.2lf, %1.2lf)\n", spacer, 
+                                modelParams[i].dimethylRateFix[0], modelParams[i].dimethylRateFix[1]);
                             else
-                                MrBayesPrint ("%s   Setting dimethylBetaPr to Fixed(%1.2lf) for partition %d\n", spacer, 
-                                modelParams[i].dimethylBetaFix, i+1);
+                                MrBayesPrint ("%s   Setting dimethylRatePr to Fixed(%1.2lf, %1.2lf) for partition %d\n", spacer, 
+                                modelParams[i].dimethylRateFix[0], modelParams[i].dimethylRateFix[1], i+1);
                             }
                         }
                     }
@@ -5338,8 +5234,6 @@ int DoPrsetParm (char *parmName, char *tkn)
             else
                 return (ERROR);
             }
-
-
         /* set Aarevmatpr (aaRevMatPr) *****************************************************/
         else if (!strcmp(parmName, "Aarevmatpr"))
             {
@@ -11823,6 +11717,24 @@ int FillNormalParams (RandLong *seed, int fromChain, int toChain)
                 else if (p->paramId == TRATIO_FIX)
                     value[0] = mp->tRatioFix;
                 }
+
+            else if (p->paramType == P_DIMETHYLRATES)
+                {
+                if (p->paramId == DIMETHYL_RATE_DIR)
+                    {
+                    for (j=0; j<p->nValues; j++)
+                        value[j]=1.0 / (MrBFlt) (p->nValues);
+                    }
+                else if (p->paramId == DIMETHYL_RATE_DIR)
+                    {
+                    scaler=0.0;
+                    for (j=0; j<p->nValues; j++)
+                        scaler += value[j];
+                    for (j=0; j<p->nValues; j++)
+                        value[j] /= scaler;
+                    }
+                }
+
             else if (p->paramType == P_REVMAT)
                 {
                 /* Fill in revMat ***************************************************************************************/
@@ -16319,7 +16231,7 @@ int IsModelSame (int whichParam, int part1, int part2, int *isApplic1, int *isAp
         if ((*isApplic1) == NO || (*isApplic2) == NO)
             isSame = NO;
         }
-    else if (whichParam == P_DIMETHYLALPHA)
+    else if (whichParam == P_DIMETHYLRATES)
         {
         /* Check if the model is parsimony for either partition */
         if (!strcmp(modelParams[part1].parsModel, "Yes"))
@@ -16340,53 +16252,20 @@ int IsModelSame (int whichParam, int part1, int part2, int *isApplic1, int *isAp
         /* GTR applies to both part1 and part2. We now need to check if the prior is the same for both. */
         if (isFirstMethyl == YES)
             {
-            if (!strcmp(modelParams[part1].dimethylAlphaPr,"Dirichlet") && !strcmp(modelParams[part2].dimethylAlphaPr,"Dirichlet"))
+            if (!strcmp(modelParams[part1].dimethylRatePr,"Dirichlet") && !strcmp(modelParams[part2].dimethylRatePr,"Dirichlet"))
                 {
-                if (AreDoublesEqual (modelParams[part1].dimethylAlphaDir, modelParams[part2].dimethylAlphaDir, (MrBFlt) 0.00001) == NO)
-                    isSame = NO;
+                for (i=0; i<2; i++)
+                    if (AreDoublesEqual (modelParams[part1].dimethylRateDir[i], modelParams[part2].dimethylRateDir[i], (MrBFlt) 0.00001) == NO)
+                        isSame = NO;
                 }
-            else if (!strcmp(modelParams[part1].dimethylAlphaPr,"Fixed") && !strcmp(modelParams[part2].dimethylAlphaPr,"Fixed"))
+            else if (!strcmp(modelParams[part1].dimethylRatePr,"Fixed") && !strcmp(modelParams[part2].dimethylRatePr,"Fixed"))
                 {
-                if (AreDoublesEqual (modelParams[part1].dimethylAlphaFix, modelParams[part2].dimethylAlphaFix, (MrBFlt) 0.00001) == NO)
-                    isSame = NO;
+                for (i=0; i<2; i++)
+                    if (AreDoublesEqual (modelParams[part1].dimethylRateFix[i], modelParams[part2].dimethylRateFix[i], (MrBFlt) 0.00001) == NO)
+                        isSame = NO;
                 }
             else 
                     isSame = NO; /* the priors are not the same, so we cannot set the parameter to be equal for both partitions */
-            }
-        }
-    else if (whichParam == P_DIMETHYLBETA)
-        {
-        /* Check if the model is parsimony for either partition */
-        if (!strcmp(modelParams[part1].parsModel, "Yes"))
-            *isApplic1 = NO; /* part1 has a parsimony model and GTR rates do not apply */
-        if (!strcmp(modelParams[part2].parsModel, "Yes"))
-            *isApplic2 = NO; /* part2 has a parsimony model and GTR rates do not apply */
-
-        /* Check that the data are methyl for both partitions 1 and 2 */
-        if (isFirstMethyl == NO && isFirstMethyl == NO)
-            *isApplic1 = NO; /* part1 is not nucleotide or protein data so GTR rates do not apply */
-        if (isSecondMethyl == NO && isSecondMethyl == NO)
-            *isApplic2 = NO; /* part2 is not nucleotide or protein data so GTR rates do not apply */
-
-        /* check that data type is the same for both partitions */
-        if (isFirstMethyl == YES && isSecondMethyl == NO)
-            isSame = NO;
-
-        /* GTR applies to both part1 and part2. We now need to check if the prior is the same for both. */
-        if (isFirstMethyl == YES)
-            {
-            if (!strcmp(modelParams[part1].dimethylBetaPr,"Dirichlet") && !strcmp(modelParams[part2].dimethylBetaPr,"Dirichlet"))
-                {
-                if (AreDoublesEqual (modelParams[part1].dimethylBetaDir, modelParams[part2].dimethylBetaDir, (MrBFlt) 0.00001) == NO)
-                    isSame = NO;
-                }
-            else if (!strcmp(modelParams[part1].dimethylBetaPr,"Fixed") && !strcmp(modelParams[part2].dimethylBetaPr,"Fixed"))
-                {
-                if (AreDoublesEqual (modelParams[part1].dimethylBetaFix, modelParams[part2].dimethylBetaFix, (MrBFlt) 0.00001) == NO)
-                    isSame = NO;
-                }
-            else
-                isSame = NO; /* the priors are not the same, so we cannot set the parameter to be equal for both partitions */
             }
         }
     else
@@ -19678,8 +19557,6 @@ int SetModelParams (void)
             p->paramType = P_REVMAT;
             if (m->dataType == PROTEIN)
                 p->nValues = 190;
-            else if (m->dataType == DIMETHYL)
-                p->nValues = 3;
             else
                 p->nValues = 6;
             p->nSubValues = 0;
@@ -19769,28 +19646,28 @@ int SetModelParams (void)
                     }
                 }
             }
-        else if (j == P_DIMETHYLALPHA)
+        else if (j == P_DIMETHYLRATES)
             {
             /* Set up dimetyl ****************************************************************************************/
-            p->paramType = P_DIMETHYLALPHA;
-                p->nValues = 1;
+            p->paramType = P_DIMETHYLRATES;
+                p->nValues = 2;
             p->nSubValues = 0;
             p->min = 0.0;
             p->max = 1.0;       /* adjust later for REVMAT_MIX, see a few lines below */
             for (i=0; i<numCurrentDivisions; i++)
                 if (isPartTouched[i] == YES)
-                    modelSettings[i].dimethylAlpha = p;
+                    modelSettings[i].dimethylRate = p;
 
             p->paramTypeName = "Rate of methylization for dimethyl data";
-            SafeStrcat(&p->name, "Dimethylalpha");
+            SafeStrcat(&p->name, "Dimethylrate");
             SafeStrcat(&p->name, partString);
 
             /* find the parameter x prior type */
-            if (!strcmp(mp->dimethylAlphaPr,"Dirichlet"))
-                p->paramId = DIMETHYL_ALPHA_DIR;
+            if (!strcmp(mp->dimethylRatePr,"Dirichlet"))
+                p->paramId = DIMETHYL_RATE_DIR;
             else
-                p->paramId = DIMETHYL_ALPHA_FIX;
-            if (p->paramId != DIMETHYL_ALPHA_FIX)
+                p->paramId = DIMETHYL_RATE_FIX;
+            if (p->paramId != DIMETHYL_RATE_FIX)
                 p->printParam = YES;
 
             sprintf (temp, "r(%c<->%c)", StateCode_DIMETHYL(0), StateCode_DIMETHYL(1));
@@ -19798,38 +19675,6 @@ int SetModelParams (void)
             SafeStrcat (&p->paramHeader, partString);
 
             }
-        else if (j == P_DIMETHYLBETA)
-            {
-            /* Set up dimetyhl beta rate param ************************************************************************************/
-            p->paramType = P_DIMETHYLBETA;
-                p->nValues = 1;
-            p->nSubValues = 0;
-            p->min = 0.0;
-            p->max = 1.0;       /* adjust later for REVMAT_MIX, see a few lines below */
-            for (i=0; i<numCurrentDivisions; i++)
-                if (isPartTouched[i] == YES)
-                    modelSettings[i].dimethylBeta = p;
-
-            p->paramTypeName = "Rate of demethylization for dimethyl data";
-            SafeStrcat(&p->name, "Dimethylbeta");
-            SafeStrcat(&p->name, partString);
-
-            /* find the parameter x prior type */
-            if (!strcmp(mp->dimethylBetaPr,"Dirichlet"))
-                p->paramId = DIMETHYL_BETA_DIR;
-            else
-                p->paramId = DIMETHYL_BETA_FIX;
-            if (p->paramId != DIMETHYL_BETA_FIX)
-                p->printParam = YES;
-
-            sprintf (temp, "r(%c<->%c)", StateCode_DIMETHYL(1), StateCode_DIMETHYL(2));
-            SafeStrcat (&p->paramHeader, temp);
-            SafeStrcat (&p->paramHeader, partString);
-
-            }
-
-
-
 
         else if (j == P_OMEGA)
             {
@@ -24316,19 +24161,12 @@ int ShowModel (void)
                     if (!strcmp(modelParams[i].nucModel, "Dimethyl"))
                         {
                         MrBayesPrint ("%s                     Methylization rates, expressed as a proportion \n", spacer);
-                        MrBayesPrint ("%s                     of the rate sum, have priors\n", spacer);
-                        MrBayesPrint ("%s                     Alpha: ", spacer);
+                        MrBayesPrint ("%s                     of the rate sum. Prior:", spacer);
 
-                        if (!strcmp(modelParams[i].dimethylAlphaPr,"Dirichlet"))
-                            MrBayesPrint ("Dirichlet(%1.2lf)\n", modelParams[i].dimethylAlphaDir);
-                        else if (!strcmp(modelParams[i].dimethylAlphaPr,"Fixed"))
-                            MrBayesPrint ("Fixed(%1.2lf)\n", modelParams[i].dimethylAlphaFix);
-
-                        MrBayesPrint ("%s                     Beta: ", spacer);
-                        if (!strcmp(modelParams[i].dimethylBetaPr,"Dirichlet"))
-                            MrBayesPrint (" Dirichlet(%1.2lf)\n", modelParams[i].dimethylBetaDir);
-                        else if (!strcmp(modelParams[i].dimethylBetaPr,"Fixed"))
-                            MrBayesPrint (" Fixed(%1.2lf)\n", modelParams[i].dimethylBetaFix);
+                        if (!strcmp(modelParams[i].dimethylRatePr,"Dirichlet"))
+                            MrBayesPrint ("  Dirichlet(%1.2lf, %1.2lf)\n", modelParams[i].dimethylRateDir[0], modelParams[i].dimethylRateDir[1]);
+                        else if (!strcmp(modelParams[i].dimethylRatePr,"Fixed"))
+                            MrBayesPrint ("  Fixed(%1.2lf, %1.2lf)\n",  modelParams[i].dimethylRateFix[0], modelParams[i].dimethylRateFix[1]);
                         }
 
                     }  
@@ -25170,13 +25008,9 @@ int ShowParameters (int showStartVals, int showMoves, int showAllAvailable)
             {
             MrBayesPrint ("%s      Speciestree       ", spacer);
             }
-        else if (j == P_DIMETHYLALPHA)
+        else if (j == P_DIMETHYLRATES)
             {
-            MrBayesPrint ("%s      Alpha (Dimethyl)  ", spacer);
-            }
-        else if (j == P_DIMETHYLBETA)
-            {
-            MrBayesPrint ("%s      Beta (Dimethyl)   ", spacer);
+            MrBayesPrint ("%s      Dimethyl Rates  ", spacer);
             }
         else
             {
@@ -25222,19 +25056,12 @@ int ShowParameters (int showStartVals, int showMoves, int showAllAvailable)
         MrBayesPrint ("%s   %4d --  Parameter  = %s\n", spacer, i+1, p->name);
         MrBayesPrint ("%s            Type       = %s\n", spacer, p->paramTypeName);
         /* print prior */
-        if (j == P_DIMETHYLALPHA)
+        if (j == P_DIMETHYLRATES)
             {
-            if (!strcmp(mp->dimethylAlphaPr,"Dirichlet"))
-                MrBayesPrint ("%s            Prior      = Dirichlet(%1.2lf)\n", spacer, mp->dimethylAlphaDir);
+            if (!strcmp(mp->dimethylRatePr,"Dirichlet"))
+                MrBayesPrint ("%s            Prior      = Dirichlet(%1.2lf, %1.2lf)\n", spacer, mp->dimethylRateDir[0], mp->dimethylRateDir[1]);
             else
-                MrBayesPrint ("%s            Prior      = Fixed(%1.2lf)\n", spacer, mp->dimethylAlphaFix);
-            }
-        if (j == P_DIMETHYLBETA)
-            {
-            if (!strcmp(mp->dimethylBetaPr,"Dirichlet"))
-                MrBayesPrint ("%s            Prior      = Dirichlet(%1.2lf)\n", spacer, mp->dimethylBetaDir);
-            else
-                MrBayesPrint ("%s            Prior      = Fixed(%1.2lf)\n", spacer, mp->dimethylBetaFix);
+                MrBayesPrint ("%s            Prior      = Fixed(%1.2lf, %1.2lf)\n", spacer, mp->dimethylRateFix[0], mp->dimethylRateFix[1]);
             }
         if (j == P_TRATIO)
             {
@@ -25272,23 +25099,14 @@ int ShowParameters (int showStartVals, int showMoves, int showAllAvailable)
                 }
             else if (ms->numModelStates == 3)
                 {
-                if (!strcmp(mp->dimethylAlphaPr,"Dirichlet"))
+                if (!strcmp(mp->dimethylRatePr,"Dirichlet"))
                     {
-                    MrBayesPrint ("%s            Prior      = Dirichlet(%1.2lf)\n", spacer, 
-                    mp->dimethylAlphaDir);
+                    MrBayesPrint ("%s            Prior      = Dirichlet(%1.2lf, %1.2lf)\n", spacer, 
+                    mp->dimethylRateDir[0],mp->dimethylRateDir[1]);
                     }
                 else
-                    MrBayesPrint ("%s            Prior      = Fixed(%1.2lf)\n", spacer, 
-                    mp->dimethylAlphaFix);
-
-                if (!strcmp(mp->dimethylBetaPr,"Dirichlet"))
-                    {
-                    MrBayesPrint ("%s            Prior      = Dirichlet(%1.2lf)\n", spacer, 
-                    mp->dimethylBetaDir);
-                    }
-                else
-                    MrBayesPrint ("%s            Prior      = Fixed(%1.2lf)\n", spacer, 
-                    mp->dimethylBetaFix);
+                    MrBayesPrint ("%s            Prior      = Fixed(%1.2lf, %1.2lf)\n", spacer, 
+                    mp->dimethylRateFix[0], mp->dimethylRateFix[1]);
 
                 }
             }
