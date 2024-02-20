@@ -2711,6 +2711,10 @@ int CompressData (void)
     for (i=0; i<compMatrixRowSize; i++)
         origChar[i] = tempChar[i];
 
+    for (i=0; i<numLocalTaxa; i++)
+        for (j=0; j<compMatrixRowSize; j++)
+        MrBayesPrint("Foo Bar %d \n", tempMatrix[pos(i,j,numLocalChar)]);
+    
 #   if defined (DEBUG_COMPRESSDATA)
     if (PrintCompMatrix() == ERROR)
         goto errorExit;
@@ -3243,14 +3247,16 @@ int DoLsetParm (char *parmName, char *tkn)
                             {
                             strcpy(modelParams[i].nucModel, tempStr);
                             modelParams[i].nStates = NumStates (i);
-                            
-                            /* set state frequencies back to default */
-                            strcpy(modelParams[i].dimethylRatePr,  "Dirichlet");
-                            modelParams[i].dimethylRateFix[0] = 0.0;
-                            modelParams[i].dimethylRateFix[1] = 0.0;
-                            modelParams[i].dimethylRateDir[0] = 1.0;
-                            modelParams[i].dimethylRateDir[1] = 1.0;
 
+                            /* set state frequencies back to default */
+                            strcpy(modelParams[i].stateFreqPr, "Dirichlet");
+                            strcpy(modelParams[i].stateFreqsFixType, "Equal");
+                            for (j=0; j<200; j++)
+                                {
+                                modelParams[i].stateFreqsFix[j] = 0.0;   
+                                modelParams[i].stateFreqsDir[j] = 1.0;
+                                }    
+                           
                             tempInt = YES;
                             if (nApplied == 0 && numCurrentDivisions == 1)
                                 MrBayesPrint ("%s   Setting Nucmodel to %s\n", spacer, modelParams[i].nucModel);
@@ -16567,6 +16573,8 @@ int PrintCompMatrix (void)
 
         if (mp->dataType == DNA || mp->dataType == RNA)
             whichChar = &WhichNuc;
+        if (mp->dataType == DIMETHYL)
+            whichChar=&WhichMethyl;
         if (mp->dataType == PROTEIN)
             whichChar = &WhichAA;
         if (mp->dataType == RESTRICTION)
@@ -24417,7 +24425,12 @@ int ShowModel (void)
                             MrBayesPrint ("%s                     State frequencies come from the mixture of models\n", spacer);
                             }
                         }
-                    else
+                    else if (!strcmp(modelParams[i].nucModel, "Dimethyl"))
+                        {
+                        MrBayesPrint ("%s                     State frequencies determined by the methylization rates. \n", spacer,
+                        modelParams[i].stateFreqsDir[0], modelParams[i].stateFreqsDir[1], modelParams[i].stateFreqsDir[2]);
+                        }
+                    else 
                         {
                         /* distribution on state frequencies for all other models */
                         if (!strcmp(modelParams[i].stateFreqPr,"Dirichlet"))

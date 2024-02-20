@@ -16588,10 +16588,11 @@ int RunChain (RandLong *seed)
             }
         TouchAllTrees (chn);
         TouchAllCijks (chn);
+
         if (usePairwise)
             curLnL[chn] = LogLikePairwise(chn);
-        else 
-            curLnL[chn] = LogLike(chn);
+        else  ;
+            curLnL[chn] = LogLike(chn); 
         curLnPr[chn] = LogPrior(chn);
         for (i=0; i<numCurrentDivisions; i++)
             {
@@ -18604,12 +18605,12 @@ int SetLikeFunctions (void)
                 }
             else
                 {
-                    /*
                 m->CondLikeDown   = &CondLikeDown_Dimethyl;
                 m->CondLikeRoot   = &CondLikeRoot_Dimethyl;
+                m->TiProbs        = &TiProbs_Dimethyl;
                 m->CondLikeScaler = &CondLikeScaler_Dimethyl;
                 m->Likelihood     = &Likelihood_Dimethyl;
-                m->TiProbs        = &TiProbs_Dimethyl;
+                    /*
                 m->CondLikeUp     = &CondLikeUp_Dimethyl;
                 m->StateCode      = &StateCode_Dimethyl;
                 m->PrintAncStates = &PrintAncStates_Dimethyl;

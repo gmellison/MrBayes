@@ -39,6 +39,15 @@
 #define TG                          14
 #define TT                          15
 
+#define EE  0
+#define EM  1
+#define ED  2
+#define ME  3
+#define MM  4
+#define MD  5
+#define DE  6
+#define DM  7
+#define DD  8
 
 void      CopySiteScalers (ModelInfo *m, int chain);
 void      ResetSiteScalers (ModelInfo *m, int chain);
@@ -163,6 +172,12 @@ int       TiProbs_Res (TreeNode *p, int division, int chain);
 int       SetNucQMatrix (MrBFlt **a, int n, int whichChain, int division, MrBFlt rateMult, MrBFlt *rA, MrBFlt *rS);
 
 int       UpDateCijk (int whichPart, int whichChain);
+
+int       CondLikeRoot_Dimethyl (TreeNode *p, int division, int chain);
+int       CondLikeDown_Dimethyl (TreeNode *p, int division, int chain);
+int       TiProbs_Dimethyl (TreeNode *p, int division, int chain);
+int       CondLikeScaler_Dimethyl (TreeNode *p, int division, int chain);
+int       Likelihood_Dimethyl (TreeNode *p, int division, int chain, MrBFlt *lnL, int whichSitePats);
 
 
 
