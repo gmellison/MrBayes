@@ -55,10 +55,6 @@ extern int      numLocalChains;
 extern int      rateProbRowSize;            /* size of rate probs for one chain one state   */
 extern MrBFlt   **rateProbs;                /* pointers to rate probs used by adgamma model */
 
-/* pairwise globals (declared in model.c) */
-extern int usePairwise;
-extern int useTriples;
-
 /* local prototypes */
 MrBFlt    GetRate (int division, int chain);
 int       RemoveNodeScalers(TreeNode *p, int division, int chain);
@@ -806,7 +802,6 @@ int CondLikeDown_Dimethyl (TreeNode *p, int division, int chain)
     pL = m->tiProbs[m->tiProbsIndex[chain][p->left->index ]];
     pR = m->tiProbs[m->tiProbsIndex[chain][p->right->index]];
 
-    MrBayesPrint("Got tps \n");
     /* find likelihoods of site patterns for left branch if terminal */
     shortCut = 0;
 #   if !defined (DEBUG_NOSHORTCUTS)
@@ -6935,7 +6930,6 @@ int Likelihood_NUC4 (TreeNode *p, int division, int chain, MrBFlt *lnL, int whic
             }       
         }
         
-
     return NO_ERROR;
 }
 
@@ -8494,7 +8488,6 @@ void LaunchLogLikeForDivision(int chain, int d, MrBFlt* lnL)
                     }
                 }
             
-            MrBayesPrint("Done with TiProbs\n");
             if (p->upDateCl == YES)
                 {
                 if (tree->isRooted == NO)
@@ -11924,13 +11917,6 @@ int UpDateCijk (int whichPart, int whichChain)
                         if (SetNucQMatrix (q[0], n, whichChain, whichPart, 1.0, &rA, &rS) == ERROR)
                             goto errorExit;
                         }
-                    }
-                if (m->dataType == DIMETHYL)
-                    {
-                        /* 
-                    if (SetDimethylQMatrix (q[0], n, whichChain, whichPart, rateOmegaValues[0], &rA, &rS) == ERROR)
-                        goto errorExit;
-                        */
                     }
 #   if defined (BEAGLE_ENABLED)
                 else if (m->dataType == RESTRICTION)
