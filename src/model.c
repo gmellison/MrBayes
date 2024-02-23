@@ -2679,6 +2679,7 @@ int CompressData (void)
         memAllocs[ALLOC_NUMSITESOFPAT] = NO;
         }
     numSitesOfPat = (CLFlt *) SafeCalloc (numCompressedChars, sizeof(CLFlt));
+
     if (!numSitesOfPat)
         {
         MrBayesPrint ("%s   Problem allocating numSitesOfPat (%d)\n", spacer, numCompressedChars * sizeof(MrBFlt));
@@ -2711,10 +2712,6 @@ int CompressData (void)
     for (i=0; i<compMatrixRowSize; i++)
         origChar[i] = tempChar[i];
 
-    for (i=0; i<numLocalTaxa; i++)
-        for (j=0; j<compMatrixRowSize; j++)
-        MrBayesPrint("Foo Bar %d \n", tempMatrix[pos(i,j,numLocalChar)]);
-    
 #   if defined (DEBUG_COMPRESSDATA)
     if (PrintCompMatrix() == ERROR)
         goto errorExit;
@@ -19087,6 +19084,8 @@ int SetModelInfo (void)
             m->nucModelId = NUCMODEL_DOUBLET;
         else if (!strcmp(mp->nucModel, "Protein"))
             m->nucModelId = NUCMODEL_AA;
+        else if (!strcmp(mp->nucModel, "Dimethyl"))
+            m->nucModelId = NUCMODEL_DIMETHYL;
         else /* if (!strcmp(mp->nucModelId, "Codon")) */
             m->nucModelId = NUCMODEL_CODON;
             
@@ -19289,6 +19288,8 @@ int SetModelInfo (void)
                 if (!strcmp(mp->nucModel,"Codon") && !strcmp(mp->omegaVar,"Equal"))
                     m->printAncStates = YES;
                 }
+            else if (m->dataType == DIMETHYL) 
+                m->printAncStates = YES;
             else if (m->dataType == STANDARD || m->dataType == RESTRICTION)
                 m->printAncStates = YES;
             if (m->printAncStates == YES)

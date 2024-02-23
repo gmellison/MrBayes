@@ -3305,7 +3305,6 @@ int CondLikeRoot_Dimethyl (TreeNode *p, int division, int chain)
         break;
         }
 
-    MrBayesPrint("ClP: %f \n", clP[h] );
     return NO_ERROR;
 }
 
@@ -6703,6 +6702,7 @@ int Likelihood_Dimethyl (TreeNode *p, int division, int chain, MrBFlt *lnL, int 
     bs[1] = (2.0*alpha*beta)/denom;
     bs[2] = (alpha*alpha)/denom;
 
+    MrBayesPrint("freqs: %f, %f, %f \n", bs[0], bs[1], bs[2]);
     /* find category frequencies */
     if (hasPInvar == NO)
         freq =  1.0 /  m->numRateCats;
@@ -6711,7 +6711,9 @@ int Likelihood_Dimethyl (TreeNode *p, int division, int chain, MrBFlt *lnL, int 
 
     /* find tree scaler */
     lnScaler = m->scalers[m->siteScalerIndex[chain]];
-    
+   
+    MrBayesPrint("lnScaler: %f", lnScaler);
+
     /* find nSitesOfPat */
     nSitesOfPat = numSitesOfPat + (whichSitePats*numCompressedChars) + m->compCharStart;
 
@@ -6742,10 +6744,7 @@ int Likelihood_Dimethyl (TreeNode *p, int division, int chain, MrBFlt *lnL, int 
                 return ERROR;
                 }
             else    
-                {
                 (*lnL) += (lnScaler[c] +  log(like)) * nSitesOfPat[c];
-                MrBayesPrint("NSitesOfPat %d: %d \n", c, nSitesOfPat[c]);
-                }
             }
         }
     else

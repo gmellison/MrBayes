@@ -1590,7 +1590,6 @@ int DoubletProbs_Gen(int division, int chain)
 
     for (p=0; p<numPairs; p++)
         {
-
         tiP = m->tiProbsPw[m->pwIndex[chain][p]];
         doubP = m->doubletProbs[m->pwIndex[chain][p]];
 
@@ -1605,10 +1604,15 @@ int DoubletProbs_Gen(int division, int chain)
             {
             dpIdx=0;
             for (i=0; i<4; i++)
+                {
                 for (j=0; j<4; j++)
+                    {
                     doubP[dpIdx++] += bs[i] * tiP[index++]/((MrBFlt)m->numRateCats);
+                    }
+                }
             }
         }
+
     return(NO_ERROR);
 }
 

@@ -15434,7 +15434,7 @@ char WhichNuc (int x)
         return (' ');
 }
 
-// Greg Checkpoint (for vim file navigating)
+// greg (checkpoint for vim file navigating)
 
 char WhichMethyl (int x)
 {

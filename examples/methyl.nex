@@ -16,6 +16,7 @@ begin mrbayes;
     lset rates=gamma;
     prset dimethylratepr=dirichlet(1.1,0.9);
     showmodel;
+    showmatrix;
     mcmc ngen=1000 samplefreq=100 burnin=100;
     sump;
     sumt;
