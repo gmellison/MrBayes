@@ -11738,6 +11738,25 @@ int FillNormalParams (RandLong *seed, int fromChain, int toChain)
                     }
                 }
 
+            else if (p->paramType == P_DIMETHYLRATES)
+                {
+                /* Fill in revMat ***************************************************************************************/
+                /* rates are stored in order, AC or AR first, using the Dirichlet parameterization */
+                if (p->paramId == DIMETHYL_RATE_DIR)
+                    {
+                    for (j=0; j<2; j++)
+                        value[j] = 0.5 ;
+                    }
+                else if (p->paramId == DIMETHYL_RATE_FIX)
+                    {
+                    scaler = 0.0;
+                    for (j=0; j<2; j++)
+                        scaler += (value[j] = mp->dimethylRateFix[j]);
+                    for (j=0; j<2; j++)
+                        value[j] /= scaler;
+                    }
+                }
+
             else if (p->paramType == P_REVMAT)
                 {
                 /* Fill in revMat ***************************************************************************************/
@@ -25110,18 +25129,6 @@ int ShowParameters (int showStartVals, int showMoves, int showAllAvailable)
                     MrBayesPrint ("%s            Prior      = Dirichlet\n", spacer);
                 else
                     MrBayesPrint ("%s            Prior      = Fixed(user-specified)\n", spacer);
-                }
-            else if (ms->numModelStates == 3)
-                {
-                if (!strcmp(mp->dimethylRatePr,"Dirichlet"))
-                    {
-                    MrBayesPrint ("%s            Prior      = Dirichlet(%1.2lf, %1.2lf)\n", spacer, 
-                    mp->dimethylRateDir[0],mp->dimethylRateDir[1]);
-                    }
-                else
-                    MrBayesPrint ("%s            Prior      = Fixed(%1.2lf, %1.2lf)\n", spacer, 
-                    mp->dimethylRateFix[0], mp->dimethylRateFix[1]);
-
                 }
             }
         else if (j == P_OMEGA)
