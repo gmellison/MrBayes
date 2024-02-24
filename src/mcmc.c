@@ -7677,6 +7677,23 @@ MrBFlt LogPrior (int chain)
                     x += (alphaDir[i] - 1.0) * log(st[i]);
                 lnPrior += x;
                 }
+        else if (p->paramType == P_DIMETHYLRATES)
+            {
+            /* revmat parameter */
+            if (p->paramId == DIMETHYL_RATE_DIR)
+                {
+                alphaDir = mp->dimethylRateDir;
+                sum = 0.0;
+                for (i=0; i<p->nValues; i++)
+                    sum += alphaDir[i];
+                x = LnGamma(sum);
+                for (i=0; i<p->nValues; i++)
+                    x -= LnGamma(alphaDir[i]);
+                for (i=0; i<p->nValues; i++)
+                    x += (alphaDir[i] - 1.0) * log(st[i]);
+                lnPrior += x;
+                }
+            }
             else if (p->paramId == REVMAT_MIX)
                 {
                 assert (p->nValues == 6);

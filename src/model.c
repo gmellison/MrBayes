@@ -2851,6 +2851,11 @@ int DoLinkParm (char *parmName, char *tkn)
             for (i=0; i<numCurrentDivisions; i++)
                 tempLinkUnlink[P_REVMAT][i] = tempLinkUnlinkVec[i];
             }
+        else if (!strcmp(parmName, "Dimethylrates"))
+            {
+            for (i=0; i<numCurrentDivisions; i++)
+                tempLinkUnlink[P_DIMETHYLRATES][i] = tempLinkUnlinkVec[i];
+            }
         else if (!strcmp(parmName, "Omega"))
             {
             for (i=0; i<numCurrentDivisions; i++)
@@ -11720,7 +11725,7 @@ int FillNormalParams (RandLong *seed, int fromChain, int toChain)
                 else if (p->paramId == TRATIO_FIX)
                     value[0] = mp->tRatioFix;
                 }
-
+            /* Fill in dimethyl rates **********************************************************************************/
             else if (p->paramType == P_DIMETHYLRATES)
                 {
                 if (p->paramId == DIMETHYL_RATE_DIR)
@@ -11728,7 +11733,7 @@ int FillNormalParams (RandLong *seed, int fromChain, int toChain)
                     for (j=0; j<p->nValues; j++)
                         value[j]=1.0 / (MrBFlt) (p->nValues);
                     }
-                else if (p->paramId == DIMETHYL_RATE_DIR)
+                else if (p->paramId == DIMETHYL_RATE_FIX)
                     {
                     scaler=0.0;
                     for (j=0; j<p->nValues; j++)
@@ -14419,6 +14424,14 @@ int IsModelSame (int whichParam, int part1, int part2, int *isApplic1, int *isAp
             *isApplic1 = NO; /* part1 has a parsimony model and state frequencies do not apply */
         if (!strcmp(modelParams[part2].parsModel, "Yes"))
             *isApplic2 = NO; /* part2 has a parsimony model and state frequencies do not apply */
+
+        /*  Check if the model is dimethyl -- base freqs not applicable: */
+        if (isFirstMethyl == YES) 
+                *isApplic1 = NO;
+
+        if (isSecondMethyl == YES) 
+                *isApplic2 = NO;
+
 
         /* Check that the data are not CONTINUOUS for partitions 1 and 2 */
         if (modelParams[part1].dataType == CONTINUOUS)
@@ -18939,6 +18952,7 @@ int SetModelInfo (void)
 
         m->tRatio = NULL;
         m->revMat = NULL;
+        m->dimethylRate = NULL;
         m->omega = NULL;
         m->stateFreq = NULL;
         m->mixtureRates = NULL;
@@ -19060,6 +19074,7 @@ int SetModelInfo (void)
         m->nCijkParts = 0;
         m->cijkIndex = NULL;
         m->cijkScratchIndex = -1;
+
         }
 
     /* set state of all chains to zero */
@@ -19289,7 +19304,7 @@ int SetModelInfo (void)
                     m->printAncStates = YES;
                 }
             else if (m->dataType == DIMETHYL) 
-                m->printAncStates = YES;
+                {}
             else if (m->dataType == STANDARD || m->dataType == RESTRICTION)
                 m->printAncStates = YES;
             if (m->printAncStates == YES)
@@ -19657,12 +19672,12 @@ int SetModelParams (void)
             }
         else if (j == P_DIMETHYLRATES)
             {
-            /* Set up dimetyl ****************************************************************************************/
+            /* Set up dimethyl ****************************************************************************************/
             p->paramType = P_DIMETHYLRATES;
                 p->nValues = 2;
             p->nSubValues = 0;
             p->min = 0.0;
-            p->max = 1.0;       /* adjust later for REVMAT_MIX, see a few lines below */
+            p->max = 1.0;  
             for (i=0; i<numCurrentDivisions; i++)
                 if (isPartTouched[i] == YES)
                     modelSettings[i].dimethylRate = p;

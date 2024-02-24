@@ -710,6 +710,12 @@ int InitializeMrBayes (void)
         defaultModel.revMatDir[i] = 1.0;
         }
     defaultModel.revMatSymDir = 1.0;                    /* default prior for GTR mixed model            */
+    strcpy(defaultModel.dimethylRatePr, "Dirichlet");         /* prior for GTR model (nucleotides)            */
+    for (i=0; i<2; i++)
+        {
+        defaultModel.dimethylRateFix[i] = 1.0;
+        defaultModel.dimethylRateDir[i] = 1.0;
+        }
     strcpy (defaultModel.aaRevMatPr, "Dirichlet");      /* prior for GTR model (proteins)               */
 
     /* Prior for state frequencies at the root.  Not really necessary,

@@ -6695,14 +6695,13 @@ int Likelihood_Dimethyl (TreeNode *p, int division, int chain, MrBFlt *lnL, int 
     /*  bs = GetParamSubVals (m->stateFreq, chain, state[chain]); */
     *dimRates=*GetParamVals (m->dimethylRate, chain, state[chain]);
     alpha = dimRates[0];
-    beta = dimRates[1];
+    beta = 0.5; /*  dimRates[1]; */
     denom = (alpha+beta) * (alpha+beta);
 
     bs[0] = (beta*beta)/denom;
     bs[1] = (2.0*alpha*beta)/denom;
     bs[2] = (alpha*alpha)/denom;
 
-    MrBayesPrint("freqs: %f, %f, %f \n", bs[0], bs[1], bs[2]);
     /* find category frequencies */
     if (hasPInvar == NO)
         freq =  1.0 /  m->numRateCats;
@@ -6712,8 +6711,6 @@ int Likelihood_Dimethyl (TreeNode *p, int division, int chain, MrBFlt *lnL, int 
     /* find tree scaler */
     lnScaler = m->scalers[m->siteScalerIndex[chain]];
    
-    MrBayesPrint("lnScaler: %f", lnScaler);
-
     /* find nSitesOfPat */
     nSitesOfPat = numSitesOfPat + (whichSitePats*numCompressedChars) + m->compCharStart;
 
