@@ -7658,6 +7658,26 @@ MrBFlt LogPrior (int chain)
                 lnPrior += x;
                 }
             }
+        else if (p->paramType == P_DIMETHYLRATES)
+            {
+            /* revmat parameter */
+            if (p->paramId == DIMETHYL_RATE_DIR)
+                {
+                alphaDir = mp->dimethylRateDir;
+                sum = 0.0;
+                for (i=0; i<p->nValues; i++)
+                    sum += alphaDir[i];
+                x = LnGamma(sum);
+                for (i=0; i<p->nValues; i++)
+                    x -= LnGamma(alphaDir[i]);
+                for (i=0; i<p->nValues; i++)
+                    x += (alphaDir[i] - 1.0) * log(st[i]);
+                lnPrior += x;
+                }
+            else 
+                {
+                }
+            }
         else if (p->paramType == P_REVMAT)
             {
             /* revmat parameter */
@@ -18324,9 +18344,9 @@ int SetLikeFunctions (void)
                 m->TiProbs        = &TiProbs_Dimethyl;
                 m->CondLikeScaler = &CondLikeScaler_Dimethyl;
                 m->Likelihood     = &Likelihood_Dimethyl;
+                m->StateCode      = &StateCode_DIMETHYL;
                     /*
                 m->CondLikeUp     = &CondLikeUp_Dimethyl;
-                m->StateCode      = &StateCode_Dimethyl;
                 m->PrintAncStates = &PrintAncStates_Dimethyl;
                 m->PrintSiteRates = &PrintSiteRates_Dimethyl;
                   */

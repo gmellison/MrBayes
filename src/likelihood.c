@@ -6710,7 +6710,7 @@ int Likelihood_Dimethyl (TreeNode *p, int division, int chain, MrBFlt *lnL, int 
 
     /* find tree scaler */
     lnScaler = m->scalers[m->siteScalerIndex[chain]];
-   
+
     /* find nSitesOfPat */
     nSitesOfPat = numSitesOfPat + (whichSitePats*numCompressedChars) + m->compCharStart;
 
