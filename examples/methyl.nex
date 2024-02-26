@@ -1,11 +1,10 @@
 #NEXUS
 
 begin data;
-    dimensions ntax=5 nchar=15;
+    dimensions ntax=4 nchar=15;
     format datatype=dimethyl interleave=no gap=-;
     matrix
 Bingus         EEMMEMDEMEEEEMD
-Bongus         EEMDEMDEMEMEEMD
 Tugboat        EEMDEMDEDDMMDMD
 Coco           EEMDEMDEDDMMDMD
 Greg           EEMDMMDEDDMEDMD
@@ -13,7 +12,6 @@ Greg           EEMDMMDEDDMEDMD
 end;
 
 begin mrbayes;
-    lset rates=gamma;
     prset dimethylratepr=dirichlet(1.1,0.9);
     showmodel;
     showmatrix;

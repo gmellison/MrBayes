@@ -921,6 +921,7 @@ int CondLikeDown_Dimethyl (TreeNode *p, int division, int chain)
                     }
                 }
         }
+
     return NO_ERROR;
 }
 
@@ -6671,6 +6672,7 @@ int Likelihood_Dimethyl (TreeNode *p, int division, int chain, MrBFlt *lnL, int 
 
     /* find model settings and pInvar, invar cond likes */
     m = &modelSettings[division];
+
     if (m->pInvar == NULL)
         {
         hasPInvar = NO;
@@ -8484,7 +8486,7 @@ void LaunchLogLikeForDivision(int chain, int d, MrBFlt* lnL)
                     }
                 }
             
-            if (p->upDateCl == YES)
+            if  (YES) /*  (p->upDateCl == YES) */
                 {
                 if (tree->isRooted == NO)
                     {
@@ -8531,7 +8533,7 @@ void LaunchLogLikeForDivision(int chain, int d, MrBFlt* lnL)
                     }
                 }
             }
-
+ 
         /* call likelihood function to summarize result */
         TIME(m->Likelihood (tree->root->left, d, chain, lnL, (chainId[chain] % chainParams.numChains)),CPULilklihood);
         } 
@@ -11251,7 +11253,7 @@ int TiProbs_Dimethyl (TreeNode *p, int division, int chain)
             tiP[index++] = (    x2 +    2.0*alpha*e1y     +     e2y)/denom;
             }
         }
-        
+
     return NO_ERROR;
 }
 

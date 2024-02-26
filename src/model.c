@@ -23321,7 +23321,6 @@ void SetUpMoveTypes (void)
     mt->level = STANDARD_USER;
     mt->Autotune = &AutotuneMultiplier;
     mt->targetRate = 0.25;
-    
     /* Move_Revmat_Dir */
     mt = &moveTypes[i++];
     mt->name = "Dirichlet proposal";
@@ -23993,7 +23992,46 @@ void SetUpMoveTypes (void)
     mt->level = STANDARD_USER;
     mt->Autotune = &AutotuneRJClocks;
     mt->targetRate = 1.0;
-    
+         
+    /* Move_DimethylRates */
+    mt = &moveTypes[i++];
+    mt->name = "Dirichlet proposal";
+    mt->shortName = "Dirichlet";
+    mt->tuningName[0] = "Dirichlet parameter";
+    mt->shortTuningName[0] = "alpha";
+    mt->applicableTo[0] = DIMETHYL_RATE_DIR;
+    mt->nApplicable = 1;
+    mt->moveFxn = &Move_Dimethyl_Dir;
+    mt->relProposalProb = 1.5;
+    mt->numTuningParams = 1;
+    mt->tuningParam[0] = 100.0;  /* alphaPi per rate */
+    mt->minimum[0] = 0.001;
+    mt->maximum[0] = 10000.0;
+    mt->parsimonyBased = NO;
+    mt->level = STANDARD_USER;
+    mt->Autotune = &AutotuneDirichlet;
+    mt->targetRate = 0.25;
+
+    /* Move_Revmat_Slider */
+    mt = &moveTypes[i++];
+    mt->name = "Sliding window";
+    mt->shortName = "Slider";
+    mt->tuningName[0] = "Sliding window size";
+    mt->shortTuningName[0] = "delta";
+    mt->applicableTo[0] = DIMETHYL_RATE_DIR;
+    mt->nApplicable = 1;
+    mt->moveFxn = &Move_Dimethyl_Slider;
+    mt->relProposalProb = 1.5;
+    mt->numTuningParams = 1;
+    mt->tuningParam[0] = 0.15;  /* window size */
+    mt->minimum[0] = 0.00001;
+    mt->maximum[0] = 100.0;
+    mt->parsimonyBased = NO;
+    mt->level = STANDARD_USER;
+    mt->Autotune = &AutotuneSlider;
+    mt->targetRate = 0.25;
+
+
     numMoveTypes = i;
     
     assert(numMoveTypes < NUM_MOVE_TYPES);

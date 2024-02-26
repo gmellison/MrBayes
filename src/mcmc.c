@@ -5792,6 +5792,8 @@ int InitChainCondLikes (void)
         /* figure out number of cond like arrays */
         m->numCondLikes = (numLocalChains + 1) * (nIntNodes);
         m->numCondLikes += numLocalTaxa;
+
+        MrBayesPrint("numCondLIkes: %d", m->numCondLikes);
         /*
 #   if !defined (DEBUG_NOSHORTCUTS)
         for (i=0; i<numLocalTaxa; i++)
@@ -5837,7 +5839,7 @@ int InitChainCondLikes (void)
                     if (m->nStates[c] > 2 && (m->cType[c] == UNORD || m->cType[c] == ORD))
                         {
                         m->tiProbLength += (m->nStates[c] * m->nStates[c]) * m->numRateCats;
-                                                }
+                        }
                     }
                 }
             }
@@ -5847,6 +5849,8 @@ int InitChainCondLikes (void)
             m->tiProbLength = m->numModelStates * m->numModelStates * m->numTiCats;
             }
         m->numTiProbs = (numLocalChains + 1) * nNodes;
+
+        MrBayesPrint("tiProbLength: %d , numTiProbs: %d\n",m->tiProbLength, m->numTiProbs);
 
         /* set info about eigen systems */
         if (InitEigenSystemInfo (m) == ERROR)
@@ -5904,6 +5908,7 @@ int InitChainCondLikes (void)
 
         /* allocate and set indices from tree nodes to cond like arrays */
         /* we set them up first because they are needed also for parsimony partitions */
+        MrBayesPrint("Initing condLikeIndex -- \n");
         m->condLikeIndex = (int **) SafeMalloc (numLocalChains * sizeof(int *));
         if (!m->condLikeIndex)
             return (ERROR);
@@ -5951,6 +5956,8 @@ int InitChainCondLikes (void)
                 }
             }
 
+        MrBayesPrint("Initing condLikeScratchIndex -- \n");
+
         /* allocate and set up scratch cond like indices */
         m->condLikeScratchIndex = (int *) SafeMalloc (nNodes * sizeof(int));
         if (!m->condLikeScratchIndex)
@@ -5984,6 +5991,8 @@ int InitChainCondLikes (void)
 
         if (m->useBeagle == NO)
             {
+
+            MrBayesPrint("non-beagle alloc condLikes -- numCondLikes = %d, condLikeLength = %d \n", m->numCondLikes, m->condLikeLength);
             /* allocate cond like space */
             m->condLikes = (CLFlt**) SafeMalloc(m->numCondLikes * sizeof(CLFlt*));
             if (!m->condLikes)
@@ -6159,7 +6168,15 @@ int InitChainCondLikes (void)
                 tiIndex += indexStep;
                 }
             }
-            
+ 
+        MrBayesPrint("TiProbsIndex/CondLikesIndex: \n");
+        for (i=0;i<numLocalChains;i++)
+            {
+            for (j=0; j<nNodes; j++)
+                MrBayesPrint(" %d/%d ", m->tiProbsIndex[i][j], m->condLikeIndex[i][j]);
+            MrBayesPrint("\n");
+            }
+           
 
         /* allocate and set up scratch transition prob indices */
         m->tiProbsScratchIndex = (int *) SafeMalloc (nNodes * sizeof(int));
@@ -7697,23 +7714,6 @@ MrBFlt LogPrior (int chain)
                     x += (alphaDir[i] - 1.0) * log(st[i]);
                 lnPrior += x;
                 }
-        else if (p->paramType == P_DIMETHYLRATES)
-            {
-            /* revmat parameter */
-            if (p->paramId == DIMETHYL_RATE_DIR)
-                {
-                alphaDir = mp->dimethylRateDir;
-                sum = 0.0;
-                for (i=0; i<p->nValues; i++)
-                    sum += alphaDir[i];
-                x = LnGamma(sum);
-                for (i=0; i<p->nValues; i++)
-                    x -= LnGamma(alphaDir[i]);
-                for (i=0; i<p->nValues; i++)
-                    x += (alphaDir[i] - 1.0) * log(st[i]);
-                lnPrior += x;
-                }
-            }
             else if (p->paramId == REVMAT_MIX)
                 {
                 assert (p->nValues == 6);

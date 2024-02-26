@@ -15094,6 +15094,198 @@ int Move_Revmat_Dir (Param *param, int chain, RandLong *seed, MrBFlt *lnPriorRat
 
 /*----------------------------------------------------------------
 |
+|   Move_Dimethyl_Slider: following is copied from revmat_slider:
+        Change rate matrix using sliding window
+|       move. Choose a pair of rates (e.g. r(A<>C), and r(A<>G)) at
+|       random and denote them rA, and rB. Let oldProp = rA/(rA + rB)
+|       and newProp = oldProp + delta(U - 0.5), where U is a uniform
+|       random variable on the interval (0, 1] and delta is a tuning
+|       parameter. Values that fall outside the boundaries are reflected
+|       back in. Then set new_rA = newProp*(rA+rB) and new_rB =
+|       (1-newProp)*(piA+piB). The Hastings ratio of this move is 1.0.
+|
+----------------------------------------------------------------*/
+int Move_Dimethyl_Slider (Param *param, int chain, RandLong *seed, MrBFlt *lnPriorRatio, MrBFlt *lnProposalRatio, MrBFlt *mvp)
+{
+    int         i, j;
+    MrBFlt      delta, *newRate, *oldRate, *priorAlpha, x, y, sum, min, max;
+    ModelParams *mp;
+
+    /* get model params and settings */
+    mp = &modelParams[param->relParts[0]];
+
+    /* get Dirichlet parameters */
+    priorAlpha = mp->dimethylRateDir;
+
+    /* get the values we need */
+    newRate = GetParamVals (param, chain, state[chain]);
+    oldRate = GetParamVals (param, chain, state[chain] ^ 1);
+
+    /* choose a pair to change */
+    i = 0; 
+    j = 1;
+    
+    /* find new proportion */
+    sum = oldRate[i] + oldRate[j];
+
+    /* get window size */
+    delta = mvp[0];
+
+    /* reflect */
+    min = RATE_MIN / sum;
+    max = 1.0 - min;
+    if (delta > max-min) /* we do it to avoid following long while loop in case if delta is high */
+        delta = max-min;
+
+    x = oldRate[i] / sum;
+    y = x + delta * (RandomNumber(seed) - 0.5);
+    while (y < min || y > max)
+        {
+        if (y < min)
+            y = 2.0 * min - y;
+        if (y > max)
+            y = 2.0 * max - y;
+        }
+    
+    /* set the new values */
+    newRate[i] = y * sum;
+    newRate[j] = sum - newRate[i];
+
+    /* get proposal ratio */
+    (*lnProposalRatio) = 0.0;
+
+    /* get prior ratio */
+    (*lnPriorRatio)  = (priorAlpha[i]-1.0) * (log(newRate[i]) - log(oldRate[i]));
+    (*lnPriorRatio) += (priorAlpha[j]-1.0) * (log(newRate[j]) - log(oldRate[j]));
+
+    /* Set update for entire tree */
+    for (i=0; i<param->nRelParts; i++)
+        TouchAllTreeNodes(&modelSettings[param->relParts[i]],chain);
+        
+    /* Set update flags for cijks for all affected partitions. If this is a simple 4 X 4 model,
+       we don't take any hit, because we will never go into a general transition probability
+       calculator. However, for many models we do want to update the cijk flag, as the transition
+       probability matrices require diagonalizing the rate matrix. */
+    for (i=0; i<param->nRelParts; i++)
+        modelSettings[param->relParts[i]].upDateCijk = YES;
+
+    return (NO_ERROR);
+}
+
+
+
+/*----------------------------------------------------------------
+|
+|   Move_Dimethyl_Dir: Change rate matrix using Dirichlet proposal
+|      mechanism.
+|
+----------------------------------------------------------------*/
+int Move_Dimethyl_Dir (Param *param, int chain, RandLong *seed, MrBFlt *lnPriorRatio, MrBFlt *lnProposalRatio, MrBFlt *mvp)
+{
+    /* change revMat using Dirichlet proposal */
+    
+    int             i, nRates,isValid;
+    MrBFlt          oldRate[200], newRate[200], dirParm[200], *value, sum, x, y, rate_pot, *alphaDir, alphaPi;
+    ModelParams     *mp;
+
+    /* get model params and settings */
+    mp = &modelParams[param->relParts[0]];
+
+    /* get rates and nRates */
+    value = GetParamVals(param, chain, state[chain]);
+    nRates = param->nValues;
+
+    /* get so called alpha_pi parameter and adjust for number of components */
+    alphaPi = mvp[0] * nRates;
+
+    /* get Dirichlet parameters */
+    alphaDir = mp->dimethylRateDir;
+
+    /* copy old rates */
+    for (i=0; i<nRates; i++)
+        oldRate[i] = value[i];
+    
+    /* multiply old ratesum props with some large number to get new values close to the old ones */
+    for (i=0; i<nRates; i++)
+        dirParm[i] = oldRate[i] * alphaPi;
+    
+    /* get new values */
+    DirichletRandomVariable (dirParm, newRate, nRates, seed);
+
+    /* check new values. we rely on newRate be already normalized  */
+    while (1)
+        {
+        sum = 0.0;
+        rate_pot = 1.0;
+        isValid=1;
+        for (i=0; i<nRates; i++)
+            {
+            if (newRate[i] <= RATE_MIN)
+                {
+                if (newRate[i] < RATE_MIN)
+                    {
+                    newRate[i] = RATE_MIN;
+                    isValid=0;
+                    }
+                rate_pot -= RATE_MIN;
+                }
+            else
+                sum += newRate[i];
+            }
+        if (isValid==1) break;
+        for (i=0; i<nRates; i++)
+            {
+            if (newRate[i]!=RATE_MIN)
+                newRate[i] = rate_pot * newRate[i] / sum;
+            }
+        }
+
+    /* copy new rate ratio values back */
+    for (i=0; i<nRates; i++)
+        value[i] = newRate[i];
+    
+    /* get proposal ratio */
+    sum = 0.0;
+    for (i=0; i<nRates; i++)
+        sum += newRate[i]*alphaPi;
+    x = LnGamma(sum);
+    for (i=0; i<nRates; i++)
+        x -= LnGamma(newRate[i]*alphaPi);
+    for (i=0; i<nRates; i++)
+        x += (newRate[i]*alphaPi-1.0)*log(oldRate[i]);
+    sum = 0.0;
+    for (i=0; i<nRates; i++)
+        sum += oldRate[i]*alphaPi;
+    y = LnGamma(sum);
+    for (i=0; i<nRates; i++)
+        y -= LnGamma(oldRate[i]*alphaPi);
+    for (i=0; i<nRates; i++)
+        y += (oldRate[i]*alphaPi-1.0)*log(newRate[i]);
+    (*lnProposalRatio) = x - y;
+
+    /* get prior ratio */
+    x = y = 0.0;
+    for (i=0; i<nRates; i++)
+        x += (alphaDir[i]-1.0)*log(newRate[i]);
+    for (i=0; i<nRates; i++)
+        y += (alphaDir[i]-1.0)*log(oldRate[i]);
+    (*lnPriorRatio) = x - y;
+
+    /* Set update flags for all partitions that share this revmat. Note that the conditional
+       likelihood update flags have been set before we even call this function. */
+    for (i=0; i<param->nRelParts; i++)
+        TouchAllTreeNodes(&modelSettings[param->relParts[i]],chain);
+        
+    /* Set update flags for cijks for all affected partitions */
+    for (i=0; i<param->nRelParts; i++)
+        modelSettings[param->relParts[i]].upDateCijk = YES;
+
+    return (NO_ERROR);
+}
+
+
+/*----------------------------------------------------------------
+|
 |   Move_Revmat_DirMix: Dirichlet proposal for REVMAT_MIX. From
 |      Huelsenbeck et al. (2004), but note that the prior density
 |      is different in that paper because they set the rate sum
