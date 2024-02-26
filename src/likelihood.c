@@ -797,7 +797,7 @@ int CondLikeDown_Dimethyl (TreeNode *p, int division, int chain)
     clL = m->condLikes[m->condLikeIndex[chain][p->left->index ]];
     clR = m->condLikes[m->condLikeIndex[chain][p->right->index]];
     clP = m->condLikes[m->condLikeIndex[chain][p->index       ]];
-    
+     
     /* find transition probabilities */
     pL = m->tiProbs[m->tiProbsIndex[chain][p->left->index ]];
     pR = m->tiProbs[m->tiProbsIndex[chain][p->right->index]];
@@ -922,6 +922,11 @@ int CondLikeDown_Dimethyl (TreeNode *p, int division, int chain)
                 }
         }
 
+    for (int i=0; i<m->condLikeLength; i++)
+        {
+        if (clP[i] > 1)
+            MrBayesPrint("Well here we are \n");
+        }
     return NO_ERROR;
 }
 
@@ -8429,7 +8434,17 @@ void LaunchLogLikeForDivision(int chain, int d, MrBFlt* lnL)
     
     m = &modelSettings[d];
     tree = GetTree(m->brlens, chain, state[chain]);
-    
+
+   MrBayesPrint("\n");
+   for (int j=0; j<tree->nIntNodes; j++)
+        {
+        p=tree->intDownPass[j];
+        MrBayesPrint("condLikes at node %d before recalc: \n", p->index);
+        for (int i=0; i<m->condLikeLength; i++)
+            MrBayesPrint("%3.3f  ", m->condLikes[m->condLikeIndex[p->index][chain]][i]);
+        MrBayesPrint("\n");
+        }
+ 
     if (m->upDateCijk == YES)
         {
         if (UpDateCijk(d, chain)== ERROR)
@@ -8486,7 +8501,7 @@ void LaunchLogLikeForDivision(int chain, int d, MrBFlt* lnL)
                     }
                 }
             
-            if  (YES) /*  (p->upDateCl == YES) */
+            if  (p->upDateCl == YES) 
                 {
                 if (tree->isRooted == NO)
                     {
@@ -8497,6 +8512,10 @@ void LaunchLogLikeForDivision(int chain, int d, MrBFlt* lnL)
                     else
                         {
                         TIME(m->CondLikeDown (p, d, chain),CPUCondLikeDown);                        
+                        MrBayesPrint("fresh condLikes at node %d: \n", p->index);
+                        for (int i=0; i<m->condLikeLength; i++)
+                                MrBayesPrint("%3.3f  ", m->condLikes[m->condLikeIndex[p->index][chain]][i]);
+                        MrBayesPrint("\n");
                         }
                     }
                 else
@@ -8533,7 +8552,7 @@ void LaunchLogLikeForDivision(int chain, int d, MrBFlt* lnL)
                     }
                 }
             }
- 
+
         /* call likelihood function to summarize result */
         TIME(m->Likelihood (tree->root->left, d, chain, lnL, (chainId[chain] % chainParams.numChains)),CPULilklihood);
         } 

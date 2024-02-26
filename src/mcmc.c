@@ -5908,7 +5908,6 @@ int InitChainCondLikes (void)
 
         /* allocate and set indices from tree nodes to cond like arrays */
         /* we set them up first because they are needed also for parsimony partitions */
-        MrBayesPrint("Initing condLikeIndex -- \n");
         m->condLikeIndex = (int **) SafeMalloc (numLocalChains * sizeof(int *));
         if (!m->condLikeIndex)
             return (ERROR);
@@ -5969,6 +5968,7 @@ int InitChainCondLikes (void)
             m->condLikeScratchIndex[i+numLocalTaxa] = clIndex;
             clIndex += indexStep;
             }
+
 
         /* parsimony models need nothing of the below */
         if (m->parsModelId == YES || m->dataType == CONTINUOUS)
@@ -6159,7 +6159,6 @@ int InitChainCondLikes (void)
 
         /* set up indices for nodes */
         tiIndex = 0;
-
         for (i=0; i<numLocalChains; i++)
             {
             for (j=0; j<nNodes; j++)
@@ -15744,7 +15743,6 @@ void ResetChainIds (void)
 
     free (curId);
 }
-
 
 /* ResetFlips: Reset flipped cond likes etc after rejection */
 void ResetFlips (int chain)
