@@ -6664,7 +6664,7 @@ int Likelihood_Gen_GibbsGamma (TreeNode *p, int division, int chain, MrBFlt *lnL
 int Likelihood_Dimethyl (TreeNode *p, int division, int chain, MrBFlt *lnL, int whichSitePats)
 {
     int             c, k, hasPInvar;
-    MrBFlt          freq, likeI, bs[3], like, pInvar=0.0, alpha, beta, dimRates[2],
+    MrBFlt          freq, likeI, bs[3], like, pInvar=0.0, alpha, beta, *dimRates=NULL,
                     denom;
     CLFlt           *clPtr, **clP, *lnScaler, *nSitesOfPat, *clInvar=NULL;
     ModelInfo       *m;
@@ -6693,9 +6693,9 @@ int Likelihood_Dimethyl (TreeNode *p, int division, int chain, MrBFlt *lnL, int 
     
     /* find base frequencies */
     /*  bs = GetParamSubVals (m->stateFreq, chain, state[chain]); */
-    *dimRates=*GetParamVals (m->dimethylRate, chain, state[chain]);
+    dimRates=GetParamVals (m->dimethylRate, chain, state[chain]);
     alpha = dimRates[0];
-    beta = 0.5; /*  dimRates[1]; */
+    beta = dimRates[1]; /*  dimRates[1]; */
     denom = (alpha+beta) * (alpha+beta);
 
     bs[0] = (beta*beta)/denom;

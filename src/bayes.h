@@ -1290,6 +1290,9 @@ typedef struct modelinfo
     Param       *stateFreq;                 /* ptr to statFreq used in model            */
                                             /* SK: same pointer (stateFreq) also
                                              * used for the stationary-root freq vector */
+
+    Param       *dimethylRate;
+
     Param       *mixtureRates;              /* ptr to site rate mixture used in model   */
     Param       *shape;                     /* ptr to shape used in model               */
     Param       *pInvar;                    /* ptr to pInvar used in model              */
@@ -1323,7 +1326,6 @@ typedef struct modelinfo
     Param       *brownCorr;                 /* ptr to Brownian motion correlation parameter */
     Param       *brownSigma;                /* ptr to Brownian motion scale parameter   */
 
-    Param       *dimethylRate;
 
     /* Information about characters and transformations */
     int         numChars;                   /* number of compressed characters          */
