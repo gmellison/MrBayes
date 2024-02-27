@@ -1623,7 +1623,7 @@ int DoSumSsParm (char *parmName, char *tkn)
             return (ERROR);
         }
 
-    return (NO_ERROR);
+    retur (NO_ERROR);
 }
 
 

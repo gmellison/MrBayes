@@ -5544,9 +5544,9 @@ int CondLikeScaler_Dimethyl (TreeNode *p, int division, int chain)
 
         for (k=0; k<m->numRateCats; k++)
             {
+            clP[k][0] /= scaler;
             clP[k][1] /= scaler;
             clP[k][2] /= scaler;
-            clP[k][3] /= scaler;
             clP[k] += 3;
             }
 
@@ -6692,6 +6692,14 @@ int Likelihood_Dimethyl (TreeNode *p, int division, int chain, MrBFlt *lnL, int 
     /* find conditional likelihood pointers */
     clPtr = m->condLikes[m->condLikeIndex[chain][p->index]];
     clP = m->clP;
+  
+    /* 
+    MrBayesPrint("Top-node cond likes for likelihood: \n");
+    for (int i=0; i<m->condLikeLength; i++)
+        if(clPtr[i] > 1.0)
+            MrBayesPrint("here we are... \n");
+    */
+
     for (k=0; k<m->numRateCats; k++)
         {
         clP[k] = clPtr;
@@ -8441,7 +8449,7 @@ void LaunchLogLikeForDivision(int chain, int d, MrBFlt* lnL)
         p=tree->intDownPass[j];
         MrBayesPrint("condLikes at node %d before recalc: \n", p->index);
         for (int i=0; i<m->condLikeLength; i++)
-            MrBayesPrint("%3.3f  ", m->condLikes[m->condLikeIndex[p->index][chain]][i]);
+            MrBayesPrint("%3.3f  ", m->condLikes[m->condLikeIndex[chain][p->index]][i]);
         MrBayesPrint("\n");
         }
  
@@ -8514,7 +8522,7 @@ void LaunchLogLikeForDivision(int chain, int d, MrBFlt* lnL)
                         TIME(m->CondLikeDown (p, d, chain),CPUCondLikeDown);                        
                         MrBayesPrint("fresh condLikes at node %d: \n", p->index);
                         for (int i=0; i<m->condLikeLength; i++)
-                                MrBayesPrint("%3.3f  ", m->condLikes[m->condLikeIndex[p->index][chain]][i]);
+                                MrBayesPrint("%3.3f  ", m->condLikes[m->condLikeIndex[chain][p->index]][i]);
                         MrBayesPrint("\n");
                         }
                     }

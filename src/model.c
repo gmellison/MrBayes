@@ -19713,9 +19713,10 @@ int SetModelParams (void)
             if (p->paramId != DIMETHYL_RATE_FIX)
                 p->printParam = YES;
 
-            sprintf (temp, "r(%c<->%c)", StateCode_DIMETHYL(0), StateCode_DIMETHYL(1));
+            sprintf (temp, "methylRate\tdemethylRate", StateCode_DIMETHYL(0), StateCode_DIMETHYL(1));
             SafeStrcat (&p->paramHeader, temp);
             SafeStrcat (&p->paramHeader, partString);
+
 
             }
 
