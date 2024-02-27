@@ -5551,7 +5551,7 @@ int CondLikeScaler_Dimethyl (TreeNode *p, int division, int chain)
             }
 
         scP[c]       = (CLFlt) log(scaler); /* store node scaler */
-        lnScaler[c] += scP[c];  /* add into tree scaler  */
+        lnScaler[c] += scP[c];              /* add into tree scaler  */
         }
 
     m->unscaledNodes[chain][p->index] = 0;   /* set unscaled nodes to 0 */
@@ -8443,8 +8443,9 @@ void LaunchLogLikeForDivision(int chain, int d, MrBFlt* lnL)
     m = &modelSettings[d];
     tree = GetTree(m->brlens, chain, state[chain]);
 
-   MrBayesPrint("\n");
-   for (int j=0; j<tree->nIntNodes; j++)
+    /* 
+    MrBayesPrint("\n");
+    for (int j=0; j<tree->nIntNodes; j++)
         {
         p=tree->intDownPass[j];
         MrBayesPrint("condLikes at node %d before recalc: \n", p->index);
@@ -8452,7 +8453,8 @@ void LaunchLogLikeForDivision(int chain, int d, MrBFlt* lnL)
             MrBayesPrint("%3.3f  ", m->condLikes[m->condLikeIndex[chain][p->index]][i]);
         MrBayesPrint("\n");
         }
- 
+    */
+
     if (m->upDateCijk == YES)
         {
         if (UpDateCijk(d, chain)== ERROR)
@@ -8520,10 +8522,12 @@ void LaunchLogLikeForDivision(int chain, int d, MrBFlt* lnL)
                     else
                         {
                         TIME(m->CondLikeDown (p, d, chain),CPUCondLikeDown);                        
+                        /*
                         MrBayesPrint("fresh condLikes at node %d: \n", p->index);
                         for (int i=0; i<m->condLikeLength; i++)
                                 MrBayesPrint("%3.3f  ", m->condLikes[m->condLikeIndex[chain][p->index]][i]);
                         MrBayesPrint("\n");
+                        */
                         }
                     }
                 else
@@ -8561,12 +8565,45 @@ void LaunchLogLikeForDivision(int chain, int d, MrBFlt* lnL)
                 }
             }
 
+        if (chain == 0)
+            {
+            MrBayesPrint("Chain 0 TiProbs: \n");
+            for (int i=0; i<tree->nNodes; i++)
+                {
+                MrBayesPrint("Node %d:  ", i);
+                for (int j=0; j<m->tiProbLength; j++)
+                    MrBayesPrint("%0.9f  " , m->tiProbs[m->tiProbsIndex[0][i]][j]);
+                MrBayesPrint("\n");
+                }
+            MrBayesPrint("\n");
+
+            MrBayesPrint("Chain 0 CondLikes: \n");
+            for (int i=0; i<tree->nNodes; i++)
+                {
+                MrBayesPrint("Node %d:  ", i);
+                for (int j=0; j<m->condLikeLength; j++)
+                    MrBayesPrint("%3.3f  " , m->condLikes[m->condLikeIndex[0][i]][j]);
+                MrBayesPrint("\n");
+                }
+            MrBayesPrint("\n");
+            
+
+            MrBayesPrint("Chain 0 CondLikes: \n");
+            for (int i=0; i<tree->nNodes; i++)
+                {
+                MrBayesPrint("Node %d:  ", i);
+                for (int j=0; j<m->condLikeLength; j++)
+                    MrBayesPrint("%3.3f  " , m->condLikes[m->condLikeIndex[0][i]][j]);
+                MrBayesPrint("\n");
+                }
+            MrBayesPrint("\n");
+            }
+
         /* call likelihood function to summarize result */
         TIME(m->Likelihood (tree->root->left, d, chain, lnL, (chainId[chain] % chainParams.numChains)),CPULilklihood);
         } 
 
-    
-    return;
+    return ;
 }
 
 
@@ -11159,7 +11196,7 @@ int TiProbs_JukesCantor (TreeNode *p, int division, int chain)
 int TiProbs_Dimethyl (TreeNode *p, int division, int chain)
 {
     int         i, j, k, index;
-    MrBFlt      t, dimRates[2], pis[3], alpha, beta,
+    MrBFlt      t, pis[3], alpha, beta, *dimRates=NULL,
                 *catRate, baseRate, theRate, length, denom;
 
     CLFlt       *tiP;
@@ -11173,14 +11210,9 @@ int TiProbs_Dimethyl (TreeNode *p, int division, int chain)
     tiP = m->tiProbs[m->tiProbsIndex[chain][p->index]];
 
     /* get revmat rates */
-    *dimRates =  *GetParamVals (m->dimethylRate, chain, state[chain]);
+    dimRates =  GetParamVals (m->dimethylRate, chain, state[chain]);
     alpha = dimRates[0];
     beta = dimRates[1];
-   
-    denom = (alpha + beta) * (alpha + beta) ; 
-    x2 = alpha * alpha;
-    xy = alpha * beta;
-    y2 = beta * beta;
 
     /* get base rate */
     baseRate = GetRate (division, chain);
@@ -11228,6 +11260,11 @@ int TiProbs_Dimethyl (TreeNode *p, int division, int chain)
 
     /* numerical errors will ensue if we allow very large or very small branch lengths,
        which might occur in relaxed clock models */
+   
+    denom = (alpha + beta) * (alpha + beta) ; 
+    x2 = alpha * alpha;
+    xy = alpha * beta;
+    y2 = beta * beta;
 
     /* fill in values */
     for (k=index=0; k<m->numRateCats; k++)
@@ -11257,29 +11294,48 @@ int TiProbs_Dimethyl (TreeNode *p, int division, int chain)
             }
         else
             {
-            e2 = exp(-2.0 * t * (alpha - beta));
+            e2 = exp(-2.0 * t * (alpha + beta));
             e2x = alpha * alpha * e2 ;
             e2xy = alpha * beta * e2 ;
             e2y = beta * beta * e2;
 
-            e1 = exp(-1.0 * t * (alpha - beta));
+            e1 = exp(-1.0 * t * (alpha + beta));
             e1x = alpha * e1;
             e1y = beta * e1;
             e1xy = (alpha - beta) * e1;
 
-            tiP[index++] = (    y2 +         2.0*beta*e1x +     e2x)/denom;
-            tiP[index++] = (2.0*xy + 2.0*(alpha-beta)*e1x - 2.0*e2x)/denom;
-            tiP[index++] = (    x2 -        2.0*alpha*e1x +     e2x)/denom;
+            tiP[index++] = (    y2 +         2.0*beta*e1x +     e2x ) / denom;
+            tiP[index++] = (2.0*xy + 2.0*(alpha-beta)*e1x - 2.0*e2x ) / denom;
+            tiP[index++] = (    x2 -        2.0*alpha*e1x +     e2x ) / denom;
 
-            tiP[index++] = (    y2 +         beta*e1xy    -     e2xy)/denom;
-            tiP[index++] = (2.0*xy + (alpha-beta)*e1xy    + 2.0*e2xy)/denom;
-            tiP[index++] = (    x2 -        alpha*e1xy    -     e2xy)/denom;
+            tiP[index++] = (    y2 +         beta*e1xy    -     e2xy) / denom;
+            tiP[index++] = (2.0*xy + (alpha-beta)*e1xy    + 2.0*e2xy) / denom;
+            tiP[index++] = (    x2 -        alpha*e1xy    -     e2xy) / denom;
 
-            tiP[index++] = (    y2 -     2.0*beta*e1y     +     e2y)/denom;
-            tiP[index++] = (2.0*xy - (alpha-beta)*e1y     - 2.0*e2y)/denom;
-            tiP[index++] = (    x2 +    2.0*alpha*e1y     +     e2y)/denom;
+            tiP[index++] = (    y2 -     2.0*beta*e1y     +     e2y ) / denom;
+            tiP[index++] = (2.0*xy - (alpha-beta)*e1y     - 2.0*e2y ) / denom;
+            tiP[index++] = (    x2 +    2.0*alpha*e1y     +     e2y ) / denom;
             }
         }
+
+    /*  normalize rows, numerical errors */
+    /* 
+    index=0;
+    for (i=0; i<3; i++)
+        {
+        denom=0.0;
+        for (j=0; j<3; j++)
+            {
+            denom+=tiP[index++];
+            }
+            tiP[index-3]/=denom;
+            tiP[index-2]/=denom;
+            tiP[index-1]/=denom;
+        }
+    */
+    for (index=0; index<m->tiProbLength; index++)
+        if (tiP[index] != tiP[index])
+            MrBayesPrint("bad ti prob... \n");
 
     return NO_ERROR;
 }
