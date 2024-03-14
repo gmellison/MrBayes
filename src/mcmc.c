@@ -6167,7 +6167,8 @@ int InitChainCondLikes (void)
                 tiIndex += indexStep;
                 }
             }
- 
+
+        /* 
         MrBayesPrint("TiProbsIndex/CondLikesIndex: \n");
         for (i=0;i<numLocalChains;i++)
             {
@@ -6175,7 +6176,7 @@ int InitChainCondLikes (void)
                 MrBayesPrint(" %d/%d ", m->tiProbsIndex[i][j], m->condLikeIndex[i][j]);
             MrBayesPrint("\n");
             }
-           
+         */
 
         /* allocate and set up scratch transition prob indices */
         m->tiProbsScratchIndex = (int *) SafeMalloc (nNodes * sizeof(int));
