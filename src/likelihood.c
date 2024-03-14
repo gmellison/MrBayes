@@ -44,6 +44,9 @@
 #include "command.h"
 #define LIKE_EPSILON                1.0e-300
 
+#define max(x,y) x > y ? x : y;
+
+
 /* global variables declared here */
 CLFlt     *preLikeL;                  /* precalculated cond likes for left descendant */
 CLFlt     *preLikeR;                  /* precalculated cond likes for right descendant*/
@@ -802,6 +805,17 @@ int CondLikeDown_Dimethyl (TreeNode *p, int division, int chain)
     pL = m->tiProbs[m->tiProbsIndex[chain][p->left->index ]];
     pR = m->tiProbs[m->tiProbsIndex[chain][p->right->index]];
 
+    for (int i=0; i<m->tiProbLength; i++)
+        {
+        if (pL[i] > 1.0 || pL[i] < 0.0)
+            MrBayesPrint("well here we are \n");
+        
+        if (pR[i] > 1.0 || pR[i] < 0.0)
+            MrBayesPrint("well here we are \n");
+        }
+
+
+
     /* find likelihoods of site patterns for left branch if terminal */
     shortCut = 0;
 #   if !defined (DEBUG_NOSHORTCUTS)
@@ -896,10 +910,13 @@ int CondLikeDown_Dimethyl (TreeNode *p, int division, int chain)
                 for (c=0; c<m->numChars; c++)
                     {
                     i = rState[c] + k*12;
+
                     clP[h++] =   (tiPL[EE]*clL[0] + tiPL[EM]*clL[1] + tiPL[ED]*clL[2])
                                 *preLikeR[i++];
+
                     clP[h++] =   (tiPL[ME]*clL[0] + tiPL[MM]*clL[1] + tiPL[MD]*clL[2])
                                 *preLikeR[i++];
+
                     clP[h++] =   (tiPL[DE]*clL[0] + tiPL[DM]*clL[1] + tiPL[DD]*clL[2])
                                 *preLikeR[i++];
                     clL += 3;
@@ -922,11 +939,15 @@ int CondLikeDown_Dimethyl (TreeNode *p, int division, int chain)
                 }
         }
 
+
     for (int i=0; i<m->condLikeLength; i++)
         {
-        if (clP[i] > 1)
-            MrBayesPrint("Well here we are \n");
+        if (clP[i] > 1.0 || clP[i] < 0.0)
+            MrBayesPrint("well here we are \n");
         }
+
+
+
     return NO_ERROR;
 }
 
@@ -1086,6 +1107,7 @@ int CondLikeDown_NUC4 (TreeNode *p, int division, int chain)
                     }
                 }
         }
+
     return NO_ERROR;
 }
 
@@ -6694,7 +6716,7 @@ int Likelihood_Dimethyl (TreeNode *p, int division, int chain, MrBFlt *lnL, int 
     clP = m->clP;
   
     /* 
-    MrBayesPrint("Top-node cond likes for likelihood: \n");
+    MrBayesPrint("Top-node cond likes for likelihood: \n"j);
     for (int i=0; i<m->condLikeLength; i++)
         if(clPtr[i] > 1.0)
             MrBayesPrint("here we are... \n");
@@ -8565,6 +8587,7 @@ void LaunchLogLikeForDivision(int chain, int d, MrBFlt* lnL)
                 }
             }
 
+        /* 
         if (chain == 0)
             {
             MrBayesPrint("Chain 0 TiProbs: \n");
@@ -8598,6 +8621,7 @@ void LaunchLogLikeForDivision(int chain, int d, MrBFlt* lnL)
                 }
             MrBayesPrint("\n");
             }
+        */
 
         /* call likelihood function to summarize result */
         TIME(m->Likelihood (tree->root->left, d, chain, lnL, (chainId[chain] % chainParams.numChains)),CPULilklihood);
@@ -10776,6 +10800,11 @@ int TiProbs_Gen (TreeNode *p, int division, int chain)
             }
         }
 
+    for (index=0; index<m->tiProbLength; index++)
+        if (tiP[index] > 1.0 || tiP[index] < 0.0)
+            MrBayesPrint("bad ti prob... \n");
+
+
 #   if 0
     printf ("v = %lf (%d)\n", t, p->index);
     for (i=index=0; i<n; i++)
@@ -11304,17 +11333,17 @@ int TiProbs_Dimethyl (TreeNode *p, int division, int chain)
             e1y = beta * e1;
             e1xy = (alpha - beta) * e1;
 
-            tiP[index++] = (    y2 +         2.0*beta*e1x +     e2x ) / denom;
-            tiP[index++] = (2.0*xy + 2.0*(alpha-beta)*e1x - 2.0*e2x ) / denom;
-            tiP[index++] = (    x2 -        2.0*alpha*e1x +     e2x ) / denom;
+            tiP[index++] = max((    y2 +         2.0*beta*e1x +     e2x ) / denom, 0.0);
+            tiP[index++] = max((2.0*xy + 2.0*(alpha-beta)*e1x - 2.0*e2x ) / denom, 0.0)
+            tiP[index++] = max((    x2 -        2.0*alpha*e1x +     e2x ) / denom, 0.0)
 
-            tiP[index++] = (    y2 +         beta*e1xy    -     e2xy) / denom;
-            tiP[index++] = (2.0*xy + (alpha-beta)*e1xy    + 2.0*e2xy) / denom;
-            tiP[index++] = (    x2 -        alpha*e1xy    -     e2xy) / denom;
+            tiP[index++] = max((    y2 +         beta*e1xy    -     e2xy) / denom, 0.0)
+            tiP[index++] = max((2.0*xy + (alpha-beta)*e1xy    + 2.0*e2xy) / denom, 0.0)
+            tiP[index++] = max((    x2 -        alpha*e1xy    -     e2xy) / denom, 0.0)
 
-            tiP[index++] = (    y2 -     2.0*beta*e1y     +     e2y ) / denom;
-            tiP[index++] = (2.0*xy - (alpha-beta)*e1y     - 2.0*e2y ) / denom;
-            tiP[index++] = (    x2 +    2.0*alpha*e1y     +     e2y ) / denom;
+            tiP[index++] = max((    y2 -     2.0*beta*e1y     +     e2y ) / denom, 0.0)
+            tiP[index++] = max((2.0*xy - 2.0*(alpha-beta)*e1y - 2.0*e2y ) / denom, 0.0)
+            tiP[index++] = max((    x2 +    2.0*alpha*e1y     +     e2y ) / denom, 0.0)
             }
         }
 
@@ -11334,7 +11363,7 @@ int TiProbs_Dimethyl (TreeNode *p, int division, int chain)
         }
     */
     for (index=0; index<m->tiProbLength; index++)
-        if (tiP[index] != tiP[index])
+        if (tiP[index] > 1.0 || tiP[index] < 0.0)
             MrBayesPrint("bad ti prob... \n");
 
     return NO_ERROR;
