@@ -71,7 +71,7 @@ int       SetBinaryQMatrix (MrBFlt **a, int whichChain, int division);
 int       SetNucQMatrix (MrBFlt **a, int n, int whichChain, int division, MrBFlt rateMult, MrBFlt *rA, MrBFlt *rS);
 int       SetStdQMatrix (MrBFlt **a, int nStates, MrBFlt *bs, int cType);
 int       SetProteinQMatrix (MrBFlt **a, int n, int whichChain, int division, MrBFlt rateMult);
-int       SetDimethylQMatrix ();
+int       SetDimethylQMatrix (MrBFlt **a, int n, int whichChain, int division);
 
 /*----------------------------------------------------------------
 |
@@ -8820,604 +8820,60 @@ int SetBinaryQMatrix (MrBFlt **a, int whichChain, int division)
     return (NO_ERROR);
 }
 
-int SetDiethylQMatrix (MrBFlt **a, int n, int whichChain, int division, MrBFlt rateMult, MrBFlt *rA, MrBFlt *rS)
+int SetDimethylQMatrix (MrBFlt **a, int n, int whichChain, int division)
 {
-    register int    i, j, k;
-    int             isTransition=0, nDiff, rtNum=0;
-    MrBFlt          scaler, mult=0.0, probOn, sum, *swr, s01, s10, s[4][4], nonsyn, *rateValues=NULL, *bs, dN, dS;
+    register int    i, j;
+    MrBFlt          scaler,*rateValues=NULL, al, be, denom, f[3];
     ModelInfo       *m;
-    ModelParams     *mp;
-#   if defined BEAGLE_ENABLED
-    MrBFlt          trans;
-#   endif
 
     /* set up pointers to the appropriate model information */
-    mp = &modelParams[division];
     m = &modelSettings[division];
     assert (m->numModelStates == n);
 
-    /* All of the models that are set up in this function require the frequencies
-       of the nucleotides (or doublets or codons). They will also require either
-       a transition/transversion rate ratio or the GTR rate parameters. The 
-       "rateValues" will either be
-       
-          rateValues[0] = transition/transversion rate (kappa)
-       
-       for nst=2 models or
-       
-          rateValues[0] = A <-> C rate
-          rateValues[1] = A <-> G rate
-          rateValues[2] = A <-> T rate
-          rateValues[3] = C <-> G rate
-          rateValues[4] = C <-> T rate
-          rateValues[5] = G <-> T rate
-          
-       for nst=6 models. */
-    bs = GetParamSubVals (m->stateFreq, whichChain, state[whichChain]);
-    if (m->nst == 2)
-        {
-        rateValues = GetParamVals(m->tRatio, whichChain, state[whichChain]);
-#   if defined (BEAGLE_ENABLED)
-        /* transversions assumed to have rate 1.0; */
-        trans = rateValues[0];
-        if (m->numModelStates == 4)   /* code to satisfy Beagle */
-            {
-            rateValues = (MrBFlt *) SafeCalloc (6, sizeof(MrBFlt));
-            rateValues[0] = rateValues[2] = rateValues[3] = rateValues[5] =1.0; /* Setting transversions */
-            rateValues[1] = rateValues[4] = trans; /* Setting transitions */
-            }
-#   endif
-        }
+    rateValues = GetParamVals(m->dimethylRate, whichChain, state[whichChain]);
+    al = rateValues[0];
+    be = rateValues[1];
+    denom = (al+be)*(al+be);
 
-    else if (m->nst == 6 || m->nst == NST_MIXED)
-        rateValues = GetParamVals(m->revMat, whichChain, state[whichChain]);
-#   if defined (BEAGLE_ENABLED)
-    else if (m->nst == 1 && m->numModelStates == 4)   /* code to satisfy Beagle */
-        {
-        rateValues = (MrBFlt *) SafeCalloc (6, sizeof(MrBFlt));
-        for (i=0; i<6; i++)
-            rateValues[i] = 1.0;
-        }
-#   endif
+    f[0] = be*be / denom; 
+    f[1] = 2*be*al / denom;
+    f[2] = al * al / denom; 
 
-    if (n == 4) 
-        {
-        /* 4 X 4 model:
+    /*  scaler = 2*al*be*(1+al*be);    */
+    /*  scaler : -sum q_ii * pi_ii: */
+    /*  scaler = (be*be * 2*al + 2*al*be * (al+be) + al*al * 2*be)/denom;  */
+
+    /* 4 X 4 model:
+    
+       Here, we set the rate matrix for the GTR model (Tavare, 1986). We
+       need not only the 6 rates for this model (rateValues), but also the 
+       base frequencies (bs). */
         
-           Here, we set the rate matrix for the GTR model (Tavare, 1986). We
-           need not only the 6 rates for this model (rateValues), but also the 
-           base frequencies (bs). */
-            
-        /* set diagonal of Q matrix to 0 */
-        for (i=0; i<4; i++)
-            a[i][i] = 0.0;
+    /* set Q matrix to 0 */
+    a[0][0] = -2 * al;
+    a[0][1] = 2 * al;
+    a[0][2] = 0.0;
 
-        /* initialize Q matrix */
-        scaler = 0.0;
-        for (i=0; i<4; i++)
-            {
-            for (j=i+1; j<4; j++)
-                {
-                if (i == 0 && j == 1)
-                    mult = rateValues[0];
-                else if (i == 0 && j == 2)
-                    mult = rateValues[1];
-                else if (i == 0 && j == 3)
-                    mult = rateValues[2];
-                else if (i == 1 && j == 2)
-                    mult = rateValues[3];
-                else if (i == 1 && j == 3)
-                    mult = rateValues[4];
-                else if (i == 2 && j == 3)
-                    mult = rateValues[5];
-                a[i][i] -= (a[i][j] = bs[j] * mult);
-                a[j][j] -= (a[j][i] = bs[i] * mult);
-                scaler += bs[i] * a[i][j];
-                scaler += bs[j] * a[j][i];
-                }
-            }
-            
-        /* rescale Q matrix */
-        scaler = 1.0 / scaler;
-        for (i=0; i<4; i++)
-            for (j=0; j<4; j++)
-                a[i][j] *= scaler;
-        }
-    else if (n == 8) /* we have a 4 X 4 covarion model */
-        {
-        /* 8 X 8 covarion model:
-        
-           Here, we set the rate matrix for the covarion model (Tuffley and
-           Steel, 1997). We need the rate parameters of the model 
-           (contained in rateValues), the frequencies of the four nucleotides,
-           and the switching rates to completely specify the rate matrix. We
-           first set up the 4 X 4 submatrix that represents changes (the upper
-           left portion of the 8 X 8 matrix). Note that if we have rate
-           variation across sites, that we need to deal with the multiplication
-           in the rate matrix (i.e., we cannot simply deal with rate variation
-           by multiplying the branch length by a rate multiplier as we can
-           with other models). Instead, we multiply the scaled rate matrix
-           by the rate multiplier. */
+    a[1][0] = be;
+    a[1][1] = -(be+al);
+    a[1][2] = al;
 
-        /* Get the switching rates. The rate of off->on is s01 and the rate
-           of on->off is s10. The stationary probability of the switch process
-           is prob1 = s01/(s01+s10) and prob0 = s10/(s01+s10). */
-        swr = GetParamVals (m->switchRates, whichChain, state[whichChain]);
-        s01 = swr[0];
-        s10 = swr[1];
-        probOn = s01 / (s01 + s10);
-        
-        /* set matrix a to 0 */
-        for (i=0; i<8; i++)
-            for (j=0; j<8; j++)
-                a[i][j] = 0.0;
+    a[2][0] = 0.0;
+    a[2][1] = 2 * be;
+    a[2][2] = -2 * be;
 
-        /* set up the 4 X 4 matrix representing substitutions (s[][]; upper left) */
-        if (m->nst == 1)
-            {
-            scaler = 0.0;
-            for (i=0; i<4; i++)
-                {
-                for (j=i+1; j<4; j++)
-                    {
-                    s[i][j] = bs[j];
-                    s[j][i] = bs[i];
-                    scaler += bs[i] * s[i][j] * probOn;
-                    scaler += bs[j] * s[j][i] * probOn;
-                    }
-                }
-            }
-        else if (m->nst == 2)
-            {
-            scaler = 0.0;
-            for (i=0; i<4; i++)
-                {
-                for (j=i+1; j<4; j++)
-                    {
-                    if ((i == 0 && j == 2) || (i == 2 && j == 0) || (i == 1 && j == 3) || (i == 3 && j == 1))
-                        mult = rateValues[0];
-                    else
-                        mult = 1.0;
-                    s[i][j] = bs[j] * mult;
-                    s[j][i] = bs[i] * mult;
-                    scaler += bs[i] * s[i][j] * probOn;
-                    scaler += bs[j] * s[j][i] * probOn;
-                    }
-                }
-            }
-        else
-            {
-            scaler = 0.0;
-            for (i=0; i<4; i++)
-                {
-                for (j=i+1; j<4; j++)
-                    {
-                    if (i == 0 && j == 1)
-                        mult = rateValues[0];
-                    else if (i == 0 && j == 2)
-                        mult = rateValues[1];
-                    else if (i == 0 && j == 3)
-                        mult = rateValues[2];
-                    else if (i == 1 && j == 2)
-                        mult = rateValues[3];
-                    else if (i == 1 && j == 3)
-                        mult = rateValues[4];
-                    else if (i == 2 && j == 3)
-                        mult = rateValues[5];
+    scaler = 0.0;
+    for (i=0;i<3;i++)
+        scaler += -1.0 * f[i] * a[i][i];
+    /* rescale Q matrix */
+    scaler = 1.0 / scaler;
 
-                    s[i][j] = bs[j] * mult;
-                    s[j][i] = bs[i] * mult;
-                    scaler += bs[i] * s[i][j] * probOn;
-                    scaler += bs[j] * s[j][i] * probOn;
-                    }
-                }
-            }
-
-        /* rescale off diagonal elements of s[][] matrix */
-        scaler = 1.0 / scaler;
-        for (i=0; i<4; i++)
-            {
-            for (j=0; j<4; j++)
-                {
-                if (i != j)
-                    s[i][j] *= scaler;
-                }
-            }
-            
-        /* now, scale s[][] by rate factor */
-        for (i=0; i<4; i++)
-            {
-            for (j=0; j<4; j++)
-                {
-                if (i != j)
-                    s[i][j] *= rateMult;
-                }
-            }
-            
-        /* put in diagonal elements of s[][] */
-        for (i=0; i<4; i++)
-            {
-            sum = 0.0;
-            for (j=0; j<4; j++)
-                {
-                if (i != j)
-                    sum += s[i][j];
-                }
-            s[i][i] = -(sum + s10);
-            }
-                
-        /* Now, put s[][] into top left portion of a matrix and fill in the
-           other parts of the matrix with the appropriate switching rates. */
-        for (i=0; i<4; i++)
-            for (j=0; j<4; j++)
-                a[i][j] = s[i][j];
-        for (i=4; i<8; i++)
-            a[i][i] = -s01;
-        a[0][4] = s10;
-        a[1][5] = s10;
-        a[2][6] = s10;
-        a[3][7] = s10;
-        a[4][0] = s01;
-        a[5][1] = s01;
-        a[6][2] = s01;
-        a[7][3] = s01;
-        
-#       if 0
-        for (i=0; i<8; i++)
-            {
-            for (j=0; j<8; j++)
-                printf ("%1.10lf ", a[i][j]);
-            printf ("\n");
-            }
-        for (i=0; i<4; i++)
-            printf ("%lf ", bs[i]);
-        printf ("\n");
-        printf ("s01 = %lf s10 = %lf pi1 = %lf pi0 = %lf\n", s01, s10, probOn, 1-probOn);
-#       endif
-        }
-    else if (n == 16) 
-        {
-        /* 16 X 16 doublet model:
-        
-           We have a doublet model. The states are in the order AA, AC, AG, AT, CA, CC
-           CG, CT, GA, GC, GG, GT, TA, TC, TG, TT. The rate matrix is straight-forward
-           to set up. We simply multiply the rate parameter (e.g., the ti/tv rate
-           ratio) by the doublet frequencies. */
-           
-        /* set diagonal of Q matrix to 0 */
-        for (i=0; i<16; i++)
-            a[i][i] = 0.0;
-
-        if (m->nst == 1) /* F81-like doublet model */
-            {
-            scaler = 0.0;
-            for (i=0; i<16; i++)
-                {
-                for (j=i+1; j<16; j++)
-                    {
-                    if (((doublet[i].first & doublet[j].first) == 0) && ((doublet[i].second & doublet[j].second) == 0))
-                        mult = 0.0;
-                    else
-                        mult = 1.0;                 
-                    a[i][i] -= (a[i][j] = bs[j] * mult);
-                    a[j][j] -= (a[j][i] = bs[i] * mult);
-                    scaler += bs[i] * a[i][j];
-                    scaler += bs[j] * a[j][i];
-                    }
-                }
-            }
-        else if (m->nst == 2) /* HKY-like doublet model */
-            {
-            scaler = 0.0;
-            for (i=0; i<16; i++)
-                {
-                for (j=i+1; j<16; j++)
-                    {
-                    if (((doublet[i].first & doublet[j].first) == 0) && ((doublet[i].second & doublet[j].second) == 0))
-                        mult = 0.0;
-                    else
-                        {
-                        if ((doublet[i].first & doublet[j].first) == 0)
-                            {
-                            if ((doublet[i].first + doublet[j].first) == 5 || (doublet[i].first + doublet[j].first) == 10)
-                                mult = rateValues[0];
-                            else
-                                mult = 1.0;
-                            }
-                        else
-                            {
-                            if ((doublet[i].second + doublet[j].second) == 5 || (doublet[i].second + doublet[j].second) == 10)
-                                mult = rateValues[0];
-                            else
-                                mult = 1.0;
-                            }
-                        }               
-                    a[i][i] -= (a[i][j] = bs[j] * mult);
-                    a[j][j] -= (a[j][i] = bs[i] * mult);
-                    scaler += bs[i] * a[i][j];
-                    scaler += bs[j] * a[j][i];
-                    }
-                }
-            }
-        else /* GTR-like doublet model */
-            {
-            scaler = 0.0;
-            for (i=0; i<16; i++)
-                {
-                for (j=i+1; j<16; j++)
-                    {
-                    if (((doublet[i].first & doublet[j].first) == 0) && ((doublet[i].second & doublet[j].second) == 0))
-                        mult = 0.0;
-                    else
-                        {
-                        if ((doublet[i].first & doublet[j].first) == 0)
-                            {
-                            if ((doublet[i].first + doublet[j].first) == 3)
-                                mult = rateValues[0];
-                            else if ((doublet[i].first + doublet[j].first) == 5)
-                                mult = rateValues[1];
-                            else if ((doublet[i].first + doublet[j].first) == 9)
-                                mult = rateValues[2];
-                            else if ((doublet[i].first + doublet[j].first) == 6)
-                                mult = rateValues[3];
-                            else if ((doublet[i].first + doublet[j].first) == 10)
-                                mult = rateValues[4];
-                            else
-                                mult = rateValues[5];
-                            }
-                        else
-                            {
-                            if ((doublet[i].second + doublet[j].second) == 3)
-                                mult = rateValues[0];
-                            else if ((doublet[i].second + doublet[j].second) == 5)
-                                mult = rateValues[1];
-                            else if ((doublet[i].second + doublet[j].second) == 9)
-                                mult = rateValues[2];
-                            else if ((doublet[i].second + doublet[j].second) == 6)
-                                mult = rateValues[3];
-                            else if ((doublet[i].second + doublet[j].second) == 10)
-                                mult = rateValues[4];
-                            else
-                                mult = rateValues[5];
-                            }
-                        }               
-                    a[i][i] -= (a[i][j] = bs[j] * mult);
-                    a[j][j] -= (a[j][i] = bs[i] * mult);
-                    scaler += bs[i] * a[i][j];
-                    scaler += bs[j] * a[j][i];
-                    }
-                }
-            }
-                    
-            
-        /* rescale Q matrix */
-        scaler = 1.0 / scaler;
-        for (i=0; i<16; i++)
-            for (j=0; j<16; j++)
-                a[i][j] *= scaler;
-        }
-    else
-        {
-        /* 64(ish) X 64(ish) codon model:
-        
-           Here, we set the rate matrix for the codon model (see Goldman and
-           Yang, 1994). Note that we can specify any general type of codon
-           model, with these constraints:
-           
-            a[i][j] = 0                      -> if i and j differ at 2 or 3 nucleotides
-            a[i][j] = rateValues[0] * bs[j]  -> if synonymous A <-> C change
-            a[i][j] = rateValues[1] * bs[j]  -> if synonymous A <-> G change
-            a[i][j] = rateValues[2] * bs[j]  -> if synonymous A <-> T change
-            a[i][j] = rateValues[3] * bs[j]  -> if synonymous C <-> G change
-            a[i][j] = rateValues[4] * bs[j]  -> if synonymous C <-> T change
-            a[i][j] = rateValues[5] * bs[j]  -> if synonymous G <-> T change
-            
-            a[i][j] = rateValues[0] * nonsyn * bs[j]  -> if nonsynonymous A <-> C change
-            a[i][j] = rateValues[1] * nonsyn * bs[j]  -> if nonsynonymous A <-> G change
-            a[i][j] = rateValues[2] * nonsyn * bs[j]  -> if nonsynonymous A <-> T change
-            a[i][j] = rateValues[3] * nonsyn * bs[j]  -> if nonsynonymous C <-> G change
-            a[i][j] = rateValues[4] * nonsyn * bs[j]  -> if nonsynonymous C <-> T change
-            a[i][j] = rateValues[5] * nonsyn * bs[j]  -> if nonsynonymous G <-> T change
-            
-          Other models, such as the one used by Nielsen & Yang (1998) can be obtained
-          from this model by restricting transitions and transversions to have the same rate.
-          nonsyn is the nonsynonymous/synonymous rate ratio (often called the
-          dN/dS ratio). If we are in this part of the function, then we rely on it
-          being called with the "rateMult" parameter specifying the dN/dS ratio. Note
-          that the size of the matrix will never be 64 X 64 as we only consider changes
-          among coding triplets (i.e., we exclude the stop codons). */
-          
-        /* get the nonsynonymous/synonymous rate ratio */
-        nonsyn = rateMult; 
-        
-        /* set diagonal of Q matrix to 0 */
-        for (i=0; i<n; i++)
-            a[i][i] = 0.0;
-            
-        /* set dN and dS rates to zero */
-        dN = dS = 0.0;
-
-        if (m->nst == 1) /* F81-like codon model */
-            {
-            scaler = 0.0;
-            for (i=0; i<n; i++)
-                {
-                for (j=i+1; j<n; j++)
-                    {
-                    nDiff = 0;
-                    for (k=0; k<3; k++)
-                        {
-                        if (mp->codonNucs[i][k] != mp->codonNucs[j][k])
-                            nDiff++;
-                        }
-                    if (nDiff > 1)
-                        {
-                        mult = 0.0;
-                        }
-                    else
-                        {
-                        if (mp->codonAAs[i] == mp->codonAAs[j])
-                            mult = 1.0;
-                        else
-                            mult = nonsyn;
-                        }
-                    
-                    a[i][i] -= (a[i][j] = bs[j] * mult);
-                    a[j][j] -= (a[j][i] = bs[i] * mult);
-                    if (mp->codonAAs[i] == mp->codonAAs[j])
-                        dS += (bs[i] * a[i][j] + bs[j] * a[j][i]);
-                    else
-                        dN += (bs[i] * a[i][j] + bs[j] * a[j][i]);
-                    scaler += bs[i] * a[i][j];
-                    scaler += bs[j] * a[j][i];
-                    }
-                }
-            }
-        else if (m->nst == 2) /* HKY-like codon model */
-            {
-            scaler = 0.0;
-            for (i=0; i<n; i++)
-                {
-                for (j=i+1; j<n; j++)
-                    {
-                    nDiff = 0;
-                    for (k=0; k<3; k++)
-                        {
-                        if (mp->codonNucs[i][k] != mp->codonNucs[j][k])
-                            {
-                            nDiff++;
-                            if ((mp->codonNucs[i][k] == 0 && mp->codonNucs[j][k] == 2) || (mp->codonNucs[i][k] == 2 && mp->codonNucs[j][k] == 0) ||
-                                (mp->codonNucs[i][k] == 1 && mp->codonNucs[j][k] == 3) || (mp->codonNucs[i][k] == 3 && mp->codonNucs[j][k] == 1))
-                                isTransition = YES;
-                            else
-                                isTransition = NO;
-                            }
-                        }
-                    if (nDiff > 1)
-                        {
-                        mult = 0.0;
-                        }
-                    else
-                        {
-                        if (mp->codonAAs[i] == mp->codonAAs[j])
-                            mult = 1.0;
-                        else
-                            mult = nonsyn;
-                        if (isTransition == YES)
-                            mult *= rateValues[0];
-                        }
-                    
-                    a[i][i] -= (a[i][j] = bs[j] * mult);
-                    a[j][j] -= (a[j][i] = bs[i] * mult);
-                    if (mp->codonAAs[i] == mp->codonAAs[j])
-                        dS += (bs[i] * a[i][j] + bs[j] * a[j][i]);
-                    else
-                        dN += (bs[i] * a[i][j] + bs[j] * a[j][i]);
-                    scaler += bs[i] * a[i][j];
-                    scaler += bs[j] * a[j][i];
-                    }
-                }
-            }
-        else /* GTR-like codon model */
-            {
-            scaler = 0.0;
-            for (i=0; i<n; i++)
-                {
-                for (j=i+1; j<n; j++)
-                    {
-                    nDiff = 0;
-                    for (k=0; k<3; k++)
-                        {
-                        if (mp->codonNucs[i][k] != mp->codonNucs[j][k])
-                            {
-                            nDiff++;
-                            if ((mp->codonNucs[i][k] == 0 && mp->codonNucs[j][k] == 1) || (mp->codonNucs[i][k] == 1 && mp->codonNucs[j][k] == 0))
-                                rtNum = 0;
-                            else if ((mp->codonNucs[i][k] == 0 && mp->codonNucs[j][k] == 2) || (mp->codonNucs[i][k] == 2 && mp->codonNucs[j][k] == 0))
-                                rtNum = 1;
-                            else if ((mp->codonNucs[i][k] == 0 && mp->codonNucs[j][k] == 3) || (mp->codonNucs[i][k] == 3 && mp->codonNucs[j][k] == 0))
-                                rtNum = 2;
-                            else if ((mp->codonNucs[i][k] == 1 && mp->codonNucs[j][k] == 2) || (mp->codonNucs[i][k] == 2 && mp->codonNucs[j][k] == 1))
-                                rtNum = 3;
-                            else if ((mp->codonNucs[i][k] == 1 && mp->codonNucs[j][k] == 3) || (mp->codonNucs[i][k] == 3 && mp->codonNucs[j][k] == 1))
-                                rtNum = 4;
-                            else
-                                rtNum = 5;
-                            }
-                        }
-                    if (nDiff > 1)
-                        {
-                        mult = 0.0;
-                        }
-                    else
-                        {
-                        if (mp->codonAAs[i] == mp->codonAAs[j])
-                            mult = 1.0;
-                        else
-                            mult = nonsyn;
-                        if (rtNum == 0)
-                            mult *= rateValues[0];
-                        else if (rtNum == 1)
-                            mult *= rateValues[1];
-                        else if (rtNum == 2)
-                            mult *= rateValues[2];
-                        else if (rtNum == 3)
-                            mult *= rateValues[3];
-                        else if (rtNum == 4)
-                            mult *= rateValues[4];
-                        else
-                            mult *= rateValues[5];
-                        }
-                    
-                    a[i][i] -= (a[i][j] = bs[j] * mult);
-                    a[j][j] -= (a[j][i] = bs[i] * mult);
-                    if (mp->codonAAs[i] == mp->codonAAs[j])
-                        dS += (bs[i] * a[i][j] + bs[j] * a[j][i]);
-                    else
-                        dN += (bs[i] * a[i][j] + bs[j] * a[j][i]);
-                    scaler += bs[i] * a[i][j];
-                    scaler += bs[j] * a[j][i];
-                    }
-                }
-            }
-
-        /* rescale Q matrix */
-        if (m->nucModelId == NUCMODEL_CODON && m->numOmegaCats > 1)
-            {
-            /* If we have a positive selection model with multiple categories, then
-               we do not rescale the rate matrix until we have finished generating
-               all of the necessary rate matrices. The rescaling occurrs in 
-               UpDateCijk. */
-            (*rA) = dN;
-            (*rS) = dS;
-            }
-        else
-            {
-            scaler = 1.0 / scaler;
-            for (i=0; i<n; i++)
-                for (j=0; j<n; j++)
-                    a[i][j] *= scaler;
-            (*rA) = (*rS) = 1.0;
-            }           
-        }
-
-#   if 0
-    for (i=0; i<n; i++)
-        {
-        for (j=0; j<n; j++)
-            printf ("%0.5lf ", a[i][j]);
-        printf ("\n");
-        }
-#   endif
-
-#   if defined (BEAGLE_ENABLED)
-    if ((m->nst == 1 || m->nst == 2) && m->numModelStates == 4)
-        free (rateValues);
-#   endif
-
+    for (i=0; i<3; i++)
+        for (j=0; j<3; j++)
+            a[i][j] *= scaler;
+    
     return (NO_ERROR);
 }
-
 
 
 int SetNucQMatrix (MrBFlt **a, int n, int whichChain, int division, MrBFlt rateMult, MrBFlt *rA, MrBFlt *rS)
@@ -11224,16 +10680,18 @@ int TiProbs_JukesCantor (TreeNode *p, int division, int chain)
 ------------------------------------------------------------------*/
 int TiProbs_Dimethyl (TreeNode *p, int division, int chain)
 {
-    int         i, j, k, index;
-    MrBFlt      t, pis[3], alpha, beta, *dimRates=NULL,
-                *catRate, baseRate, theRate, length, denom;
+    int         i, j, k, n, s, index;
+    MrBFlt      t, pis[3], alpha, beta, *dimRates=NULL, *ptr,  *eigenValues, *cijk, EigValexp[64], sum,
+                *catRate, baseRate, theRate, length, correctionFactor;
 
     CLFlt       *tiP;
     ModelInfo   *m;
  
-    MrBFlt      e2x, e2y, e2xy, y2, x2, xy, e1y, e1x, e1xy, e2, e1;
-   
+    /* MrBFlt      a,b, a2, b2, ab, e2, e1; */
+    /*   MrBFlt      scale; */
+
     m = &modelSettings[division];
+    n = m->numModelStates;
 
     /* find transition probabilities */
     tiP = m->tiProbs[m->tiProbsIndex[chain][p->index]];
@@ -11242,7 +10700,6 @@ int TiProbs_Dimethyl (TreeNode *p, int division, int chain)
     dimRates =  GetParamVals (m->dimethylRate, chain, state[chain]);
     alpha = dimRates[0];
     beta = dimRates[1];
-
     /* get base rate */
     baseRate = GetRate (division, chain);
    
@@ -11258,7 +10715,12 @@ int TiProbs_Dimethyl (TreeNode *p, int division, int chain)
         catRate = GetParamSubVals (m->mixtureRates, chain, state[chain]);
     else
         catRate = &theRate;
-    
+
+    /* get eigenvalues and cijk pointers */
+    eigenValues = m->cijks[m->cijkIndex[chain]];
+    cijk        = eigenValues + (2 * n);
+
+
     /* find length */
     if (m->cppEvents != NULL)
         {
@@ -11289,16 +10751,25 @@ int TiProbs_Dimethyl (TreeNode *p, int division, int chain)
 
     /* numerical errors will ensue if we allow very large or very small branch lengths,
        which might occur in relaxed clock models */
-   
-    denom = (alpha + beta) * (alpha + beta) ; 
-    x2 = alpha * alpha;
-    xy = alpha * beta;
-    y2 = beta * beta;
+    /*  
+    scale = 2*alpha*beta * (1+beta+alpha); 
+
+    a = alpha / (alpha + beta) ;
+    b = beta / (alpha + beta) ;
+    a2 = a * a;
+    ab = a * b;
+    b2 = b * b;
+    */
 
     /* fill in values */
     for (k=index=0; k<m->numRateCats; k++)
         {
-        t =  length * baseRate * catRate[k];
+        t =  length * baseRate * catRate[k] * 2.0;  /*  correction factor of 2 since 2 sites per site  */
+
+        /*
+        e1 = exp(-1.0*(a+b) * t);
+        e2 = exp(-2.0*(a+b) * t);
+        */
 
         if (t < TIME_MIN)
             {
@@ -11323,27 +10794,36 @@ int TiProbs_Dimethyl (TreeNode *p, int division, int chain)
             }
         else
             {
-            e2 = exp(-2.0 * t * (alpha + beta));
-            e2x = alpha * alpha * e2 ;
-            e2xy = alpha * beta * e2 ;
-            e2y = beta * beta * e2;
+            /* We actually need to do some work... */
+            for (s=0; s<n; s++)
+                EigValexp[s] =  exp(eigenValues[s] * t);
 
-            e1 = exp(-1.0 * t * (alpha + beta));
-            e1x = alpha * e1;
-            e1y = beta * e1;
-            e1xy = (alpha - beta) * e1;
+            ptr = cijk;
+            for (i=0; i<n; i++)
+                {
+                for (j=0; j<n; j++)
+                    {
+                    sum = 0.0;
+                    for (s=0; s<n; s++)
+                        sum += (*ptr++) * EigValexp[s];
+                    tiP[index++] = (CLFlt) ((sum < 0.0) ? 0.0 : sum);
+                    }
+                }
 
-            tiP[index++] = max((    y2 +         2.0*beta*e1x +     e2x ) / denom, 0.0);
-            tiP[index++] = max((2.0*xy + 2.0*(alpha-beta)*e1x - 2.0*e2x ) / denom, 0.0)
-            tiP[index++] = max((    x2 -        2.0*alpha*e1x +     e2x ) / denom, 0.0)
+            /* 
+            tiP[index++] = max((b2   + 2*ab*e1        + a2*e2  ) , 0.0);
+            tiP[index++] = max((2*ab + 2*a*(a-b)*e1   - 2*a2*e2) , 0.0);
+            tiP[index++] = max((a2   - 2*a2*e1        + a2*e2  ) , 0.0);
 
-            tiP[index++] = max((    y2 +         beta*e1xy    -     e2xy) / denom, 0.0)
-            tiP[index++] = max((2.0*xy + (alpha-beta)*e1xy    + 2.0*e2xy) / denom, 0.0)
-            tiP[index++] = max((    x2 -        alpha*e1xy    -     e2xy) / denom, 0.0)
+            tiP[index++] = max((b2   - b*(b-a)*e1     - ab*e2  ) , 0.0);
+            tiP[index++] = max((2*ab + (a-b)*(a-b)*e1 + 2*ab*e2) , 0.0);
+            tiP[index++] = max((a2   - a*(a-b)*e1     - a*b*e2 ) , 0.0);
 
-            tiP[index++] = max((    y2 -     2.0*beta*e1y     +     e2y ) / denom, 0.0)
-            tiP[index++] = max((2.0*xy - 2.0*(alpha-beta)*e1y - 2.0*e2y ) / denom, 0.0)
-            tiP[index++] = max((    x2 +    2.0*alpha*e1y     +     e2y ) / denom, 0.0)
+            tiP[index++] = max((b2   - 2*b2*e1        + b2*e2  ) , 0.0);
+            tiP[index++] = max((2*ab - 2*b*(a-b)*e1   - 2*b2*e2) , 0.0);
+            tiP[index++] = max((a2   + 2*ab*e1        + b2*e2  ) , 0.0);
+            */
+
             }
         }
 
@@ -11364,7 +10844,7 @@ int TiProbs_Dimethyl (TreeNode *p, int division, int chain)
     */
     for (index=0; index<m->tiProbLength; index++)
         if (tiP[index] > 1.0 || tiP[index] < 0.0)
-            MrBayesPrint("bad ti prob... \n");
+            MrBayesPrint("bad ti prob...! \n");
 
     return NO_ERROR;
 }
@@ -11944,7 +11424,7 @@ int UpDateCijk (int whichPart, int whichChain)
                     rateOmegaValues = GetParamSubVals (m->mixtureRates, whichChain, state[whichChain]);
                 }
             }
-        else if (m->dataType != STANDARD && m->dataType != RESTRICTION)
+        else if (m->dataType != STANDARD && m->dataType != RESTRICTION && m->dataType != DIMETHYL)
             {
             MrBayesPrint ("%s   ERROR: Should not be updating cijks!\n", spacer);
             return (ERROR);
@@ -12015,7 +11495,12 @@ int UpDateCijk (int whichPart, int whichChain)
             
             if (m->nCijkParts == 1)
                 {
-                if (m->dataType == DNA || m->dataType == RNA)
+                if (m->dataType == DIMETHYL)  
+                    {
+                    if (SetDimethylQMatrix (q[0], n, whichChain, whichPart) == ERROR)
+                        goto errorExit;
+                    }
+                else if (m->dataType == DNA || m->dataType == RNA)
                     {
                     if (m->nucModelId == NUCMODEL_CODON)
                         {
@@ -12110,6 +11595,11 @@ int UpDateCijk (int whichPart, int whichChain)
                     if (m->dataType == DNA || m->dataType == RNA)
                         {
                         if (SetNucQMatrix (q[k], n, whichChain, whichPart, rateOmegaValues[k], &rA, &rS) == ERROR)
+                            goto errorExit;
+                        }
+                    else if (m->dataType == DIMETHYL)
+                        { 
+                        if (SetDimethylQMatrix (q[k], n, whichChain, whichPart) == ERROR)
                             goto errorExit;
                         }
                     else
