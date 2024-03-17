@@ -19305,7 +19305,9 @@ int SetModelInfo (void)
             }
         else if (m->dataType == DIMETHYL)
             { 
-            m->cijkLength=0;
+            ts=m->numModelStates;
+            m->cijkLength=(ts*ts*ts) + (2*ts);
+            m->nCijkParts=m->numRateCats;
             }
 
         /* check if we should calculate ancestral states */

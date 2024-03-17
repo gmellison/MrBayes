@@ -6571,6 +6571,12 @@ int InitEigenSystemInfo (ModelInfo *m)
             m->nCijkParts = m->numRateCats;
             }
         }
+    else if (m->dataType == DIMETHYL)
+            { 
+            ts=m->numModelStates;
+            m->cijkLength=(ts*ts*ts) + (2*ts);
+            m->nCijkParts=m->numRateCats;
+            }
     else if (m->dataType == DNA || m->dataType == RNA)
         {
         if (m->nucModelId == NUCMODEL_4BY4)
