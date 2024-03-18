@@ -6575,7 +6575,7 @@ int InitEigenSystemInfo (ModelInfo *m)
             { 
             ts=m->numModelStates;
             m->cijkLength=(ts*ts*ts) + (2*ts);
-            m->nCijkParts=m->numRateCats;
+            m->nCijkParts=1;
             }
     else if (m->dataType == DNA || m->dataType == RNA)
         {

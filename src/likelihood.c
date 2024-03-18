@@ -8479,7 +8479,7 @@ void LaunchLogLikeForDivision(int chain, int d, MrBFlt* lnL)
 
     if (m->upDateCijk == YES)
         {
-        if (UpDateCijk(d, chain)== ERROR)
+        if (UpDateCijk(d, chain) == ERROR)
             {
             (*lnL) = MRBFLT_NEG_MAX; /* effectively abort the move */
             return;
@@ -8837,7 +8837,7 @@ int SetDimethylQMatrix (MrBFlt **a, int n, int whichChain, int division)
 
     f[0] = be*be / denom; 
     f[1] = 2*be*al / denom;
-    f[2] = al * al / denom; 
+    f[2] = al*al / denom; 
 
     /*  scaler = 2*al*be*(1+al*be);    */
     /*  scaler : -sum q_ii * pi_ii: */
@@ -8865,6 +8865,7 @@ int SetDimethylQMatrix (MrBFlt **a, int n, int whichChain, int division)
     scaler = 0.0;
     for (i=0;i<3;i++)
         scaler += -1.0 * f[i] * a[i][i];
+
     /* rescale Q matrix */
     scaler = 1.0 / scaler;
 
@@ -10682,7 +10683,7 @@ int TiProbs_Dimethyl (TreeNode *p, int division, int chain)
 {
     int         i, j, k, n, s, index;
     MrBFlt      t, pis[3], alpha, beta, *dimRates=NULL, *ptr,  *eigenValues, *cijk, EigValexp[64], sum,
-                *catRate, baseRate, theRate, length, correctionFactor;
+                *catRate, baseRate, theRate, length, correctionFactor, denom;
 
     CLFlt       *tiP;
     ModelInfo   *m;
@@ -10702,7 +10703,11 @@ int TiProbs_Dimethyl (TreeNode *p, int division, int chain)
     beta = dimRates[1];
     /* get base rate */
     baseRate = GetRate (division, chain);
-   
+    denom = ((alpha + beta) * (alpha + beta));
+    pis[0] = beta*beta / denom;
+    pis[1] = 2.0*alpha*beta / denom; 
+    pis[2] = alpha*alpha / denom;
+
     /* compensate for invariable sites if appropriate */
     if (m->pInvar != NULL)
         baseRate /= (1.0 - (*GetParamVals(m->pInvar, chain, state[chain])));
@@ -10719,7 +10724,6 @@ int TiProbs_Dimethyl (TreeNode *p, int division, int chain)
     /* get eigenvalues and cijk pointers */
     eigenValues = m->cijks[m->cijkIndex[chain]];
     cijk        = eigenValues + (2 * n);
-
 
     /* find length */
     if (m->cppEvents != NULL)
@@ -10774,9 +10778,9 @@ int TiProbs_Dimethyl (TreeNode *p, int division, int chain)
         if (t < TIME_MIN)
             {
             /* Fill in identity matrix */
-            for (i=0; i<3; i++)
+            for (i=0; i<n; i++)
                 {
-                for (j=0; j<3; j++)
+                for (j=0; j<n; j++)
                     {
                     if (i == j)
                         tiP[index++] = 1.0;
@@ -10788,8 +10792,8 @@ int TiProbs_Dimethyl (TreeNode *p, int division, int chain)
         else if (t > TIME_MAX)
             {
             /* Fill in stationary matrix */
-            for (i=0; i<3; i++)
-                for (j=0; j<3; j++)
+            for (i=0; i<n; i++)
+                for (j=0; j<n; j++)
                     tiP[index++] = (CLFlt) pis[j];
             }
         else
