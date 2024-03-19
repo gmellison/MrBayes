@@ -940,12 +940,13 @@ int CondLikeDown_Dimethyl (TreeNode *p, int division, int chain)
         }
 
 
+    /*
     for (int i=0; i<m->condLikeLength; i++)
         {
         if (clP[i] > 1.0 || clP[i] < 0.0)
             MrBayesPrint("well here we are \n");
         }
-
+    */
 
 
     return NO_ERROR;
