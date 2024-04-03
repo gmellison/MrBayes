@@ -5156,7 +5156,7 @@ int DoPrsetParm (char *parmName, char *tkn)
                 for (i=0; i<numCurrentDivisions; i++)
                     {
                     if ((activeParts[i] == YES || nApplied == 0) && modelParams[i].dataType == DIMETHYL )
-                        strcpy (tempStr,modelParams[i].dimethylRatePr);
+                        strcpy (tempStr, modelParams[i].dimethylRatePr);
                     }
                 /* find and store the number */
                 sscanf (tkn, "%lf", &tempD);
@@ -6469,7 +6469,7 @@ int DoPrsetParm (char *parmName, char *tkn)
                         {
                         if ((activeParts[i] == YES || nApplied == 0) &&
                             (modelParams[i].dataType == DNA || modelParams[i].dataType == RNA || modelParams[i].dataType == PROTEIN ||
-                             modelParams[i].dataType == RESTRICTION || modelParams[i].dataType == STANDARD))
+                             modelParams[i].dataType == RESTRICTION || modelParams[i].dataType == STANDARD || modelParams[i].dataType == DIMETHYL))
                             {
                             strcpy(modelParams[i].shapePr, tempStr);
                             flag = 1;
@@ -11737,27 +11737,8 @@ int FillNormalParams (RandLong *seed, int fromChain, int toChain)
                     {
                     scaler=0.0;
                     for (j=0; j<p->nValues; j++)
-                        scaler += value[j];
-                    for (j=0; j<p->nValues; j++)
-                        value[j] /= scaler;
-                    }
-                }
-
-            else if (p->paramType == P_DIMETHYLRATES)
-                {
-                /* Fill in revMat ***************************************************************************************/
-                /* rates are stored in order, AC or AR first, using the Dirichlet parameterization */
-                if (p->paramId == DIMETHYL_RATE_DIR)
-                    {
-                    for (j=0; j<2; j++)
-                        value[j] = 0.5 ;
-                    }
-                else if (p->paramId == DIMETHYL_RATE_FIX)
-                    {
-                    scaler = 0.0;
-                    for (j=0; j<2; j++)
                         scaler += (value[j] = mp->dimethylRateFix[j]);
-                    for (j=0; j<2; j++)
+                    for (j=0; j<p->nValues; j++)
                         value[j] /= scaler;
                     }
                 }
@@ -19695,7 +19676,7 @@ int SetModelParams (void)
             {
             /* Set up dimethyl ****************************************************************************************/
             p->paramType = P_DIMETHYLRATES;
-                p->nValues = 2;
+            p->nValues = 2;
             p->nSubValues = 0;
             p->min = 0.0;
             p->max = 1.0;  
@@ -19715,7 +19696,7 @@ int SetModelParams (void)
             if (p->paramId != DIMETHYL_RATE_FIX)
                 p->printParam = YES;
 
-            sprintf (temp, "methylRate\tdemethylRate", StateCode_DIMETHYL(0), StateCode_DIMETHYL(1));
+            sprintf (temp, "methylRate\tdemethylRate");
             SafeStrcat (&p->paramHeader, temp);
             SafeStrcat (&p->paramHeader, partString);
 
