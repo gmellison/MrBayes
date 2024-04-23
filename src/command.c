@@ -14839,7 +14839,7 @@ void SetUpParms (void)
     PARAM (286, "Relrates",       DoPwSetParm,       "\0"); 
     PARAM (287, "Pairwise",       DoLsetParm,        "Yes|No|\0"); 
     PARAM (288, "Dimethylratepr",  DoPrsetParm,       "Dirichlet|Fixed|\0"); 
-    PARAM (289, "Dimethylrate",    DoLinkParm,    "\0"); 
+    PARAM (289, "Dimethylrates",    DoLinkParm,       "\1"); 
 
     /* NOTE: If a change is made to the parameter table, make certain you change
             NUMPARAMS (now 283; one more than last index) at the top of this file. */
