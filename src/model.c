@@ -19696,7 +19696,11 @@ int SetModelParams (void)
             if (p->paramId != DIMETHYL_RATE_FIX)
                 p->printParam = YES;
 
-            sprintf (temp, "methylRate\tdemethylRate");
+            sprintf (temp, "methylRate");
+            SafeStrcat (&p->paramHeader, temp);
+            SafeStrcat (&p->paramHeader, partString);
+
+            sprintf(temp, "\tdemethylRate");
             SafeStrcat (&p->paramHeader, temp);
             SafeStrcat (&p->paramHeader, partString);
 
