@@ -358,7 +358,7 @@ CmdType     commands[] =
             { 55,       "Taxlabels", YES,       DoTaxlabels,  1,                                                                                            {228},    49152,                                       "Defines taxon labels", IN_FILE, SHOW },
             { 56,       "Translate", YES,       DoTranslate,  1,                                                                                             {83},    49152,                         "Defines alternative names for taxa", IN_FILE, SHOW },
             { 57,            "Tree",  NO,            DoTree,  1,                                                                                             {79},        4,                                             "Defines a tree", IN_FILE, SHOW },
-            { 58,          "Unlink",  NO,          DoUnlink, 31,  {55,56,57,58,59,60,61,62,63,72,73,74,75,76,105,118,193,194,195,196,197,242,243,252,253,255,256,
+            { 58,          "Unlink",  NO,          DoUnlink, 32,  {55,56,57,58,59,60,61,62,63,72,73,74,75,76,105,118,193,194,195,196,197,242,243,252,253,255,256,
                                                                                                                                                      270,273,274,289},        4,             "Unlinks parameters across character partitions",  IN_CMD, SHOW },
             { 59,        "Usertree", YES,        DoUserTree,  1,                                                                                            {203},        8,                                 "Defines a single user tree",  IN_CMD, HIDE },
             { 60,         "Version",  NO,         DoVersion,  0,                                                                                             {-1},       32,                                      "Shows program version",  IN_CMD, SHOW },
@@ -14839,7 +14839,7 @@ void SetUpParms (void)
     PARAM (286, "Relrates",       DoPwSetParm,       "\0"); 
     PARAM (287, "Pairwise",       DoLsetParm,        "Yes|No|\0"); 
     PARAM (288, "Dimethylratepr",  DoPrsetParm,       "Dirichlet|Fixed|\0"); 
-    PARAM (289, "Dimethylrates",    DoLinkParm,       "\1"); 
+    PARAM (289, "Dimethylrates",    DoLinkParm,       "\0"); 
 
     /* NOTE: If a change is made to the parameter table, make certain you change
             NUMPARAMS (now 283; one more than last index) at the top of this file. */
