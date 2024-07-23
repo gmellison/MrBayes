@@ -10702,6 +10702,7 @@ int TiProbs_Dimethyl (TreeNode *p, int division, int chain)
     dimRates =  GetParamVals (m->dimethylRate, chain, state[chain]);
     alpha = dimRates[0];
     beta = dimRates[1];
+
     /* get base rate */
     baseRate = GetRate (division, chain);
     denom = ((alpha + beta) * (alpha + beta));

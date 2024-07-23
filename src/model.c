@@ -2851,7 +2851,7 @@ int DoLinkParm (char *parmName, char *tkn)
             for (i=0; i<numCurrentDivisions; i++)
                 tempLinkUnlink[P_REVMAT][i] = tempLinkUnlinkVec[i];
             }
-        else if (!strcmp(parmName, "Dimethylrates"))
+        else if (!strcmp(parmName, "Dimethylrate"))
             {
             for (i=0; i<numCurrentDivisions; i++)
                 tempLinkUnlink[P_DIMETHYLRATES][i] = tempLinkUnlinkVec[i];

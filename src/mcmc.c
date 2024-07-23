@@ -7697,7 +7697,7 @@ MrBFlt LogPrior (int chain)
                     x += (alphaDir[i] - 1.0) * log(st[i]);
                 lnPrior += x;
                 }
-            else 
+            else  
                 {
                 }
             }
