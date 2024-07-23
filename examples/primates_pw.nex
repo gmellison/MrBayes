@@ -22,9 +22,10 @@ Saimiri_sciureus    AAGCTTCACCGGCGCAATGATCCTAATAATCGCTCACGGGTTTACTTCGTCTATGCTATT
 end;
 
 begin mrbayes;
-    lset nst=6 nucmodel=4by4 pairwise=yes rates=gamma;
+    lset nst=6 nucmodel=4by4 rates=gamma;
+    lset pairwise=yes pwalphalike=full;
     prset shapepr=exponential(1);
-    mcmc ngen=10000 samplefreq=1000 burnin=1000;
+    mcmc temp=0.07 ngen=20000 samplefreq=1000 burnin=8000;
     sump;
     sumt;
 end;
