@@ -10816,38 +10816,9 @@ int TiProbs_Dimethyl (TreeNode *p, int division, int chain)
                     }
                 }
 
-            /* 
-            tiP[index++] = max((b2   + 2*ab*e1        + a2*e2  ) , 0.0);
-            tiP[index++] = max((2*ab + 2*a*(a-b)*e1   - 2*a2*e2) , 0.0);
-            tiP[index++] = max((a2   - 2*a2*e1        + a2*e2  ) , 0.0);
-
-            tiP[index++] = max((b2   - b*(b-a)*e1     - ab*e2  ) , 0.0);
-            tiP[index++] = max((2*ab + (a-b)*(a-b)*e1 + 2*ab*e2) , 0.0);
-            tiP[index++] = max((a2   - a*(a-b)*e1     - a*b*e2 ) , 0.0);
-
-            tiP[index++] = max((b2   - 2*b2*e1        + b2*e2  ) , 0.0);
-            tiP[index++] = max((2*ab - 2*b*(a-b)*e1   - 2*b2*e2) , 0.0);
-            tiP[index++] = max((a2   + 2*ab*e1        + b2*e2  ) , 0.0);
-            */
-
             }
         }
 
-    /*  normalize rows, numerical errors */
-    /* 
-    index=0;
-    for (i=0; i<3; i++)
-        {
-        denom=0.0;
-        for (j=0; j<3; j++)
-            {
-            denom+=tiP[index++];
-            }
-            tiP[index-3]/=denom;
-            tiP[index-2]/=denom;
-            tiP[index-1]/=denom;
-        }
-    */
     for (index=0; index<m->tiProbLength; index++)
         if (tiP[index] > 1.0 || tiP[index] < 0.0)
             MrBayesPrint("bad ti prob...! \n");

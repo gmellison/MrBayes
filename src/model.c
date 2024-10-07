@@ -5109,6 +5109,109 @@ int DoPrsetParm (char *parmName, char *tkn)
                 return (ERROR);
             }
 
+
+        /* set readErrPr (revMatPr) *********************************************************/
+        else if (!strcmp(parmName, "Readerrpr"))
+            {
+            if (expecting == Expecting(EQUALSIGN))
+                expecting = Expecting(ALPHA);
+            else if (expecting == Expecting(ALPHA))
+                {
+                if (IsArgValid(tkn, tempStr) == NO_ERROR)
+                    {
+                    nApplied = NumActiveParts ();
+                    flag = 0;
+                    for (i=0; i<numCurrentDivisions; i++)
+                        {
+                        if ((activeParts[i] == YES || nApplied == 0) &&
+                            (modelParams[i].dataType == DIMETHYL))
+                            {
+                            strcpy(modelParams[i].readErrPr, tempStr);
+                            flag = 1;
+                            }
+                        }
+                    if (flag == 0)
+                        {
+                        MrBayesPrint ("%s   Warning: %s can be set only for partition containing data of at least one of following type:\n", spacer, parmName);
+                        MrBayesPrint ("%s            DIMETHYL. Currently there is no active partition with such data.\n", spacer);
+                        return (ERROR);
+                        }
+                    }
+                else
+                    {
+                    MrBayesPrint ("%s   Invalid ReadErrPr argument\n", spacer);
+                    return (ERROR);
+                    }
+                expecting  = Expecting(LEFTPAR);
+                for (i=0; i<numCurrentDivisions; i++)
+                    numVars[i] = 0;
+                }
+            else if (expecting == Expecting(LEFTPAR))
+                {
+                expecting  = Expecting(NUMBER);
+                }
+            else if (expecting == Expecting(NUMBER))
+                {
+                nApplied = NumActiveParts ();
+                for (i=0; i<numCurrentDivisions; i++)
+                    {
+                    if ((activeParts[i] == YES || nApplied == 0) && (modelParams[i].dataType == DIMETHYL))
+                        {
+                        if (!strcmp(modelParams[i].readErrPr,"Uniform"))
+                            {
+                            sscanf (tkn, "%lf", &tempD);
+                            modelParams[i].readErrUni[numVars[i]++] = tempD;
+                            if (numVars[i] == 1)
+                                expecting  = Expecting(COMMA);
+                            else
+                                {
+                                if (modelParams[i].readErrUni[0] >= modelParams[i].readErrUni[1])
+                                    {
+                                    MrBayesPrint ("%s   Lower value for uniform should be greater than upper value\n", spacer);
+                                    return (ERROR);
+                                    }
+                                if (modelParams[i].readErrUni[1] > 1.0)
+                                    {
+                                    MrBayesPrint ("%s   Upper value for uniform should be less than or equal to 1.0\n", spacer);
+                                    return (ERROR);
+                                    }
+                                if (nApplied == 0 && numCurrentDivisions == 1)
+                                    MrBayesPrint ("%s   Setting ReadErrPr to Uniform(%1.2lf,%1.2lf)\n", spacer, modelParams[i].readErrUni[0], modelParams[i].readErrUni[1]);
+                                else
+                                    MrBayesPrint ("%s   Setting ReadErrPr to Uniform(%1.2lf,%1.2lf) for partition %d\n", spacer, modelParams[i].readErrUni[0], modelParams[i].pInvarUni[1], i+1);
+                                expecting  = Expecting(RIGHTPAR);
+                                }
+                            }
+                        else if (!strcmp(modelParams[i].readErrPr,"Fixed"))
+                            {
+                            sscanf (tkn, "%lf", &tempD);
+                            if (tempD > 1.0)
+                                {
+                                MrBayesPrint ("%s   Value for ReadErr should be in the interval (0, 1)\n", spacer);
+                                return (ERROR);
+                                }
+                            modelParams[i].pInvarFix = tempD;
+                            if (nApplied == 0 && numCurrentDivisions == 1)
+                                MrBayesPrint ("%s   Setting ReadErrPr to Fixed(%1.2lf)\n", spacer, modelParams[i].readErrFix);
+                            else
+                                MrBayesPrint ("%s   Setting ReadErrPr to Fixed(%1.2lf) for partition %d\n", spacer, modelParams[i].readErrFix, i+1);
+                            expecting  = Expecting(RIGHTPAR);
+                            }
+                        }
+                    }
+                }
+            else if (expecting == Expecting(COMMA))
+                {
+                expecting  = Expecting(NUMBER);
+                }
+            else if (expecting == Expecting(RIGHTPAR))
+                {
+                expecting = Expecting(PARAMETER) | Expecting(SEMICOLON);
+                }
+            else
+                return (ERROR);
+            }
+
         /* set  () *********************************************************/
         else if (!strcmp(parmName, "Dimethylratepr"))
             {
@@ -11740,6 +11843,18 @@ int FillNormalParams (RandLong *seed, int fromChain, int toChain)
                         scaler += (value[j] = mp->dimethylRateFix[j]);
                     for (j=0; j<p->nValues; j++)
                         value[j] /= scaler;
+                    }
+                }
+
+            else if (p->paramType == P_READERRRATE)
+                {
+                if (p->paramId == READERR_UNI)
+                    {
+                    value[0]=1.0;
+                    }
+                else if (p->paramId == READERR_FIX)
+                    {
+                    value[0] =  mp->readErrFix;
                     }
                 }
 
