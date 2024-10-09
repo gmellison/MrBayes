@@ -2856,6 +2856,11 @@ int DoLinkParm (char *parmName, char *tkn)
             for (i=0; i<numCurrentDivisions; i++)
                 tempLinkUnlink[P_DIMETHYLRATES][i] = tempLinkUnlinkVec[i];
             }
+        else if (!strcmp(parmName, "Readerrpr"))
+            {
+            for (i=0; i<numCurrentDivisions; i++)
+                tempLinkUnlink[P_READERRRATE][i] = tempLinkUnlinkVec[i];
+            }
         else if (!strcmp(parmName, "Omega"))
             {
             for (i=0; i<numCurrentDivisions; i++)
@@ -5178,7 +5183,7 @@ int DoPrsetParm (char *parmName, char *tkn)
                                 if (nApplied == 0 && numCurrentDivisions == 1)
                                     MrBayesPrint ("%s   Setting ReadErrPr to Uniform(%1.2lf,%1.2lf)\n", spacer, modelParams[i].readErrUni[0], modelParams[i].readErrUni[1]);
                                 else
-                                    MrBayesPrint ("%s   Setting ReadErrPr to Uniform(%1.2lf,%1.2lf) for partition %d\n", spacer, modelParams[i].readErrUni[0], modelParams[i].pInvarUni[1], i+1);
+                                    MrBayesPrint ("%s   Setting ReadErrPr to Uniform(%1.2lf,%1.2lf) for partition %d\n", spacer, modelParams[i].readErrUni[0], modelParams[i].readErrUni[1], i+1);
                                 expecting  = Expecting(RIGHTPAR);
                                 }
                             }
@@ -5190,7 +5195,7 @@ int DoPrsetParm (char *parmName, char *tkn)
                                 MrBayesPrint ("%s   Value for ReadErr should be in the interval (0, 1)\n", spacer);
                                 return (ERROR);
                                 }
-                            modelParams[i].pInvarFix = tempD;
+                            modelParams[i].readErrFix = tempD;
                             if (nApplied == 0 && numCurrentDivisions == 1)
                                 MrBayesPrint ("%s   Setting ReadErrPr to Fixed(%1.2lf)\n", spacer, modelParams[i].readErrFix);
                             else
@@ -11850,7 +11855,7 @@ int FillNormalParams (RandLong *seed, int fromChain, int toChain)
                 {
                 if (p->paramId == READERR_UNI)
                     {
-                    value[0]=1.0;
+                    value[0]=0.0;
                     }
                 else if (p->paramId == READERR_FIX)
                     {
@@ -16399,6 +16404,44 @@ int IsModelSame (int whichParam, int part1, int part2, int *isApplic1, int *isAp
                     isSame = NO; /* the priors are not the same, so we cannot set the parameter to be equal for both partitions */
             }
         }
+    else if (whichParam == P_READERRRATE)
+        {
+        /* Check if the model is parsimony for either partition */
+        if (!strcmp(modelParams[part1].parsModel, "Yes"))
+            *isApplic1 = NO; /* part1 has a parsimony model and GTR rates do not apply */
+        if (!strcmp(modelParams[part2].parsModel, "Yes"))
+            *isApplic2 = NO; /* part2 has a parsimony model and GTR rates do not apply */
+
+        /* Check that the data are methyl for both partitions 1 and 2 */
+        if (isFirstMethyl == NO)
+            *isApplic1 = NO; /* part1 is not methyl data so methyl rates do not apply */
+        if (isSecondMethyl == NO)
+            *isApplic2 = NO; /* part2 is not methyl data so methyl rates do not apply */
+
+        /* check that data type is the same for both partitions */
+        if (isFirstMethyl == YES && isSecondMethyl == NO)
+            isSame = NO;
+
+        /* dimethyl applies to both part1 and part2. We now need to check if the prior is the same for both. */
+        if (isFirstMethyl == YES)
+            {
+            if (!strcmp(modelParams[part1].readErrPr,"Dirichlet") && !strcmp(modelParams[part2].readErrPr,"Dirichlet"))
+                {
+                for (i=0; i<2; i++)
+                    if (AreDoublesEqual (modelParams[part1].readErrUni[i], modelParams[part2].readErrUni[i], (MrBFlt) 0.00001) == NO)
+                        isSame = NO;
+                }
+            else if (!strcmp(modelParams[part1].readErrPr,"Fixed") && !strcmp(modelParams[part2].readErrPr,"Fixed"))
+                {
+                if (AreDoublesEqual (modelParams[part1].readErrFix, modelParams[part2].readErrFix, (MrBFlt) 0.00001) == NO)
+                    isSame = NO;
+                }
+            else 
+                    isSame = NO; /* the priors are not the same, so we cannot set the parameter to be equal for both partitions */
+            }
+        }
+
+
     else
         {
         MrBayesPrint ("%s   Could not find parameter in IsModelSame\n", spacer);
@@ -19818,9 +19861,37 @@ int SetModelParams (void)
             sprintf(temp, "\tdemethylRate");
             SafeStrcat (&p->paramHeader, temp);
             SafeStrcat (&p->paramHeader, partString);
+            }
+        else if (j == P_READERRRATE)
+            {
+            /* Set up dim1thyl ****************************************************************************************/
+            p->paramType = P_READERRRATE;
+            p->nValues = 1;
+            p->nSubValues = 0;
+            p->min = 0.0;
+            p->max = 1.0;  
+            for (i=0; i<numCurrentDivisions; i++)
+                if (isPartTouched[i] == YES)
+                    modelSettings[i].readErrRate = p;
 
+            p->paramTypeName = "Rate of read errors for dimethyl alignment string";
+            SafeStrcat(&p->name, "Readerrrate");
+            SafeStrcat(&p->name, partString);
+
+            /* find the parameter x prior type */
+            if (!strcmp(mp->readErrPr,"Uniform"))
+                p->paramId = READERR_UNI;
+            else
+                p->paramId = READERR_FIX;
+            if (p->paramId != READERR_FIX)
+                p->printParam = YES;
+
+            sprintf (temp, "readErrRate");
+            SafeStrcat (&p->paramHeader, temp);
+            SafeStrcat (&p->paramHeader, partString);
 
             }
+
 
         else if (j == P_OMEGA)
             {
@@ -24115,7 +24186,7 @@ void SetUpMoveTypes (void)
     mt->Autotune = &AutotuneDirichlet;
     mt->targetRate = 0.25;
 
-    /* Move_Revmat_Slider */
+    /* Move_Dimethyl Slider */
     mt = &moveTypes[i++];
     mt->name = "Sliding window";
     mt->shortName = "Slider";
@@ -24133,6 +24204,26 @@ void SetUpMoveTypes (void)
     mt->level = STANDARD_USER;
     mt->Autotune = &AutotuneSlider;
     mt->targetRate = 0.25;
+
+    /* Move_Pinvar */
+    mt = &moveTypes[i++];
+    mt->name = "Sliding window";
+    mt->shortName = "Slider";
+    mt->tuningName[0] = "Sliding window size";
+    mt->shortTuningName[0] = "delta";
+    mt->applicableTo[0] = READERR_UNI;
+    mt->nApplicable = 1;
+    mt->moveFxn = &Move_ReadErrRate;
+    mt->relProposalProb = 1.0;
+    mt->numTuningParams = 1;
+    mt->tuningParam[0] = 0.1;  /* window size */
+    mt->minimum[0] = 0.001;
+    mt->maximum[0] = 0.999;
+    mt->parsimonyBased = NO;
+    mt->level = STANDARD_USER;
+    mt->Autotune = &AutotuneSlider;
+    mt->targetRate = 0.25;
+
 
 
     numMoveTypes = i;
@@ -25201,6 +25292,10 @@ int ShowParameters (int showStartVals, int showMoves, int showAllAvailable)
             {
             MrBayesPrint ("%s      Dimethyl Rates  ", spacer);
             }
+        else if (j == P_READERRRATE)
+            {
+            MrBayesPrint ("%s      Methyl Read Error Rates  ", spacer);
+            }
         else
             {
             MrBayesPrint ("%s      ERROR: Someone forgot to name parameter type %d", spacer, j);
@@ -25251,6 +25346,13 @@ int ShowParameters (int showStartVals, int showMoves, int showAllAvailable)
                 MrBayesPrint ("%s            Prior      = Dirichlet(%1.2lf, %1.2lf)\n", spacer, mp->dimethylRateDir[0], mp->dimethylRateDir[1]);
             else
                 MrBayesPrint ("%s            Prior      = Fixed(%1.2lf, %1.2lf)\n", spacer, mp->dimethylRateFix[0], mp->dimethylRateFix[1]);
+            }
+        if (j == P_READERRRATE)
+            {
+            if (!strcmp(mp->readErrPr,"Uniform"))
+                MrBayesPrint ("%s            Prior      = Uniform(%1.2lf, %1.2lf)\n", spacer, mp->readErrUni[0], mp->readErrUni[1]);
+            else
+                MrBayesPrint ("%s            Prior      = Fixed(%1.2lf)\n", spacer, mp->readErrFix);
             }
         if (j == P_TRATIO)
             {

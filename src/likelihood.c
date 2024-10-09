@@ -790,8 +790,14 @@ int CondLikeDown_Dimethyl (TreeNode *p, int division, int chain)
     int             c, h, i, j, k, shortCut, *lState=NULL, *rState=NULL;
     CLFlt           *clL, *clR, *clP, *pL, *pR, *tiPL, *tiPR;
     ModelInfo       *m;
-    
+    MrBFlt          rER;
+    CLFlt           readErrProbs[9];
+    int             index;
+
     m = &modelSettings[division];
+    if (m->readErrRate != NULL) {
+        rER=*GetParamVals (m->readErrRate, chain, state[chain]);
+    }
 
     /* flip space so that we do not overwrite old cond likes */
     FlipCondLikeSpace (m, chain, p->index);
@@ -805,16 +811,14 @@ int CondLikeDown_Dimethyl (TreeNode *p, int division, int chain)
     pL = m->tiProbs[m->tiProbsIndex[chain][p->left->index ]];
     pR = m->tiProbs[m->tiProbsIndex[chain][p->right->index]];
 
-    for (int i=0; i<m->tiProbLength; i++)
-        {
-        if (pL[i] > 1.0 || pL[i] < 0.0)
-            MrBayesPrint("well here we are \n");
-        
-        if (pR[i] > 1.0 || pR[i] < 0.0)
-            MrBayesPrint("well here we are \n");
-        }
-
-
+       //for (int i=0; i<m->tiProbLength; i++)
+    //    {
+    //    if (pL[i] > 1.0 || pL[i] < 0.0)
+    //        MrBayesPrint("well here we are \n");
+    //    
+    //    if (pR[i] > 1.0 || pR[i] < 0.0)
+    //        MrBayesPrint("well here we are \n");
+    //    }
 
     /* find likelihoods of site patterns for left branch if terminal */
     shortCut = 0;
@@ -3123,7 +3127,7 @@ int CondLikeRoot_Gen_GibbsGamma (TreeNode *p, int division, int chain)
 
 /*----------------------------------------------------------------
 |
-|   CondLikeRoot_Dimethyl: 4by4 nucleotide model with or without rate
+|   CondLikeRoot_Dimethyl: 3by3 dimethyl model with or without rate
 |       variation
 |
 -----------------------------------------------------------------*/
@@ -5524,7 +5528,7 @@ int CondLikeScaler_Gen_GibbsGamma (TreeNode *p, int division, int chain)
 
 /*----------------------------------------------------------------
 |
-|   CondLikeScaler_Dimethyl: 4by4 nucleotide model with or without rate
+|   CondLikeScaler_Dimethyl: 3by3 dimethyl model with or without rate
 |       variation
 |
 -----------------------------------------------------------------*/
@@ -10684,10 +10688,14 @@ int TiProbs_Dimethyl (TreeNode *p, int division, int chain)
 {
     int         i, j, k, n, s, index;
     MrBFlt      t, pis[3], alpha, beta, *dimRates=NULL, *ptr,  *eigenValues, *cijk, EigValexp[64], sum,
-                *catRate, baseRate, theRate, length, correctionFactor, denom;
-
+                *catRate, baseRate, theRate, length, denom;
+    MrBFlt      rER;
     CLFlt       *tiP;
     ModelInfo   *m;
+
+    CLFlt *rECL; 
+    CLFlt readErrProbs[9];
+
  
     /* MrBFlt      a,b, a2, b2, ab, e2, e1; */
     /*   MrBFlt      scale; */
@@ -10819,11 +10827,47 @@ int TiProbs_Dimethyl (TreeNode *p, int division, int chain)
             }
         }
 
-    for (index=0; index<m->tiProbLength; index++)
-        if (tiP[index] > 1.0 || tiP[index] < 0.0)
-            MrBayesPrint("bad ti prob...! \n");
+    //for (index=0; indexm->tiProbLength; index++)
+    //    if (tiP[index] > 1.0 || tiP[index] < 0.0)
+    //        MrBayesPrint("bad ti prob...! \n");
+ 
+    // if left/right node are tips, calc probabilities 
+    // by summing over the read error probabilities  
+    //
+    if (p->index < numLocalTaxa)
+        {
+        rER=*GetParamVals (m->readErrRate, chain, state[chain]);
+        for (i=index=0; i<3; i++)
+            {
+            for (j=0; j<3; j++)
+               {
+               if (j==i) 
+                   readErrProbs[index++]=(1 - 2.0*rER);
+               else 
+                   readErrProbs[index++]=rER;
+               }
+           }
 
-    return NO_ERROR;
+        rECL=m->readErrCls[m->readErrClIndex[chain][p->index]];
+        int tipIndex;
+        for (k=index=tipIndex=0; k<m->numRateCats; k++)
+            {
+            for (i=0; i<n; i++) 
+                { 
+                for (j=0; j<n; j++) 
+                    {
+                    /*  rECL[index] = P(j -> i) = \sum_x P(x, i) P(x->j) */
+                    rECL[index]+=(CLFlt)(tiP[tipIndex+j+0]*readErrProbs[i+0]);
+                    rECL[index]+=(CLFlt)(tiP[tipIndex+j+3]*readErrProbs[i+3]);
+                    rECL[index]+=(CLFlt)(tiP[tipIndex+j+6]*readErrProbs[i+6]);
+                    index++;
+                    }
+                }
+            tipIndex+=9;
+            }
+        }
+                                                                           
+    return (NO_ERROR);
 }
 
 

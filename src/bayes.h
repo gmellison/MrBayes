@@ -433,7 +433,7 @@ typedef float CLFlt;        /* single-precision float used for cond likes (CLFlt
 #define UNLINKED                1
 
 /*paramType*/
-#define NUM_LINKED              37
+#define NUM_LINKED              38
 #define P_TRATIO                0
 #define P_REVMAT                1
 #define P_OMEGA                 2
@@ -471,6 +471,7 @@ typedef float CLFlt;        /* single-precision float used for cond likes (CLFlt
 #define P_WNVAR                 34
 #define P_WNBRANCHRATES         35
 #define P_DIMETHYLRATES         36
+#define P_READERRRATE           37
 
 /* NOTE: If you add another parameter, change NUM_LINKED */
 
@@ -898,6 +899,8 @@ typedef struct param
 #define FOSLRATE_EXP                    170
 #define DIMETHYL_RATE_DIR               171
 #define DIMETHYL_RATE_FIX               172
+#define READERR_UNI                     173
+#define READERR_FIX                     174
 
 
 #if defined (BEAGLE_ENABLED)
@@ -1048,6 +1051,10 @@ typedef struct model
     char        dimethylRatePr[100];
     MrBFlt      dimethylRateFix[2];
     MrBFlt      dimethylRateDir[2];
+
+    char        readErrPr[100];
+    MrBFlt      readErrFix;
+    MrBFlt      readErrUni[2];
 
     char        omegaPr[100];      /* prior for omega                              */
     MrBFlt      omegaFix;
@@ -1292,6 +1299,7 @@ typedef struct modelinfo
                                              * used for the stationary-root freq vector */
 
     Param       *dimethylRate;
+    Param       *readErrRate;
 
     Param       *mixtureRates;              /* ptr to site rate mixture used in model   */
     Param       *shape;                     /* ptr to shape used in model               */
@@ -1411,6 +1419,12 @@ typedef struct modelinfo
     int         tiProbLength;               /* length of ti prob array                      */
     MrBFlt      lnLike[MAX_CHAINS];         /* log like for chain                           */
     CLFlt       *ancStateCondLikes;         /* ancestral state cond like array              */
+
+    /*  variables for handling methyl read errors at the tips */
+    int         readErrClLength;
+    int         numReadErrCls;
+    CLFlt       **readErrCls;
+    int         **readErrClIndex;
 
     /* Likelihood function pointers */
     LikeDownFxn         CondLikeDown;       /* function for calculating partials            */

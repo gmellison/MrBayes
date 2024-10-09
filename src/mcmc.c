@@ -5718,6 +5718,7 @@ int InitChainCondLikes (void)
     BitsLong    *charBits;
     CLFlt       *cL;
     ModelInfo   *m;
+    int         reI;
 #   if defined (SSE_ENABLED)
     int         j1;
 #   endif
@@ -5793,7 +5794,9 @@ int InitChainCondLikes (void)
         m->numCondLikes = (numLocalChains + 1) * (nIntNodes);
         m->numCondLikes += numLocalTaxa;
 
-        MrBayesPrint("numCondLIkes: %d", m->numCondLikes);
+        m->numReadErrCls = (numLocalChains + 1) * (numLocalTaxa);
+        m->readErrClLength = m->numModelStates * m->numModelStates * m->numRateCats;
+
         /*
 #   if !defined (DEBUG_NOSHORTCUTS)
         for (i=0; i<numLocalTaxa; i++)
@@ -5917,10 +5920,11 @@ int InitChainCondLikes (void)
             if (!m->condLikeIndex[i])
                 return (ERROR);
             }
+
         for (i=0; i<numLocalChains; i++)
             for (j=0; j<nNodes; j++)
                 m->condLikeIndex[i][j] = -1;
-
+        
         /* set up indices for terminal nodes */
         clIndex = 0;
         if (m->useBeagle == YES)
@@ -5941,6 +5945,22 @@ int InitChainCondLikes (void)
             clIndex += 1; /* even for multiple omega cat we need only one set of conditional likelihoods  for terminals for all chains.*/
             }
 
+
+        /*  allocate similar index for read error condlikes */
+        m->readErrClIndex=SafeMalloc(numLocalChains * sizeof(int*));
+        for (i=0; i<numLocalChains; i++)
+            m->readErrClIndex[i]=SafeMalloc(numLocalTaxa * sizeof(int));
+
+        reI=0;
+        for (i=0; i<numLocalChains; i++)
+            {
+            for (j=0;j<numLocalTaxa; j++) 
+                {
+                m->readErrClIndex[i][j]=reI;
+                reI+=1;
+                }
+            }
+
         /* reserve private space for parsimony-based moves if parsimony model is used */
         if (m->parsModelId == YES && m->parsimonyBasedMove == YES)
             clIndex += nIntNodes;
@@ -5955,7 +5975,6 @@ int InitChainCondLikes (void)
                 }
             }
 
-        MrBayesPrint("Initing condLikeScratchIndex -- \n");
 
         /* allocate and set up scratch cond like indices */
         m->condLikeScratchIndex = (int *) SafeMalloc (nNodes * sizeof(int));
@@ -6127,6 +6146,17 @@ int InitChainCondLikes (void)
                 {
                 m->tiProbs[i] = (CLFlt*) SafeMalloc(m->tiProbLength * sizeof(CLFlt));
                 if (!m->tiProbs[i])
+                    return (ERROR);
+                }
+
+            /*  allocate readErrCls */
+            m->readErrCls = SafeMalloc(m->numReadErrCls * sizeof(CLFlt*));
+            if (!m->readErrCls)
+                return (ERROR);
+            for (i=0;i<m->numReadErrCls;i++)
+                {
+                m->readErrCls[i]=SafeMalloc(m->readErrClLength * sizeof(CLFlt));  
+                if (m->readErrCls[i] == NULL)
                     return (ERROR);
                 }
 
@@ -7699,8 +7729,23 @@ MrBFlt LogPrior (int chain)
                 }
             else  
                 {
+                    /*  fixed  */
                 }
             }
+        else if (p->paramType == P_READERRRATE)
+            {
+            /* revmat parameter */
+            if (p->paramId == READERR_UNI)
+                {
+                /* proportion of invariable sites parameter */
+                lnPrior += log(1.0) - log(mp->readErrUni[1] - mp->readErrUni[0]);
+                }
+            else  
+                {
+                    /*  fixed  */
+                }
+            }
+
         else if (p->paramType == P_REVMAT)
             {
             /* revmat parameter */

@@ -15284,6 +15284,94 @@ int Move_Dimethyl_Dir (Param *param, int chain, RandLong *seed, MrBFlt *lnPriorR
 }
 
 
+int Move_ReadErrRate (Param *param, int chain, RandLong *seed, MrBFlt *lnPriorRatio, MrBFlt *lnProposalRatio, MrBFlt *mvp)
+{
+    /* change proportion of site methylation read errors readErrRate */
+
+    int             i, c, isValidP, *rateCat, nGammaCats;
+    MrBFlt          oldP, newP, window, minP, maxP, ran, lnReadErrRatio, lnNonErrRatio;
+    CLFlt           *nSitesOfPat;
+    ModelParams     *mp;
+    ModelInfo       *m;
+
+    /* get size of window, centered on current readErrRate value */
+    window = mvp[0];
+
+    /* get model params */
+    mp = &modelParams[param->relParts[0]];
+    
+    /* get minimum and maximum values for pInvar */
+    minP = mp->readErrUni[0];
+    maxP = mp->readErrUni[1];
+
+    /* get old value of pInvar */
+    oldP = *GetParamVals(param, chain, state[chain]);
+
+    /* change value for pInvar */
+    ran = RandomNumber(seed);
+    if (maxP-minP < window)
+        {
+        window = maxP-minP;
+        }
+
+    newP = oldP + window * (ran - 0.5);
+
+    /* check validity */
+    isValidP = NO;
+    do
+        {
+        if (newP < minP)
+            newP = 2* minP - newP;
+        else if (newP > maxP)
+            newP = 2 * maxP - newP;
+        else
+            isValidP = YES;
+        } while (isValidP == NO);
+
+    /* get proposal ratio */
+    *lnProposalRatio = 0.0;
+    
+    /* get prior ratio */
+    *lnPriorRatio = 0.0;
+    lnReadErrRatio = log(newP) - log(oldP);
+    lnNonErrRatio = log(1.0-newP) - log(1.0-oldP);
+    for (i=0; i<param->nRelParts; i++)
+        {
+        m = &modelSettings[param->relParts[i]];
+        if (m->gibbsGamma == YES)
+            {
+            /* find rate category index and number of gamma categories */
+            rateCat = m->tiIndex + chain * m->numChars;
+            nGammaCats = m->numRateCats;
+
+            /* find nSitesOfPat */
+            nSitesOfPat = numSitesOfPat + (chainId[chain] % chainParams.numChains)*numCompressedChars + m->compCharStart;
+            
+            /* loop over characters */
+            for (c=0; c<m->numChars; c++)
+                {
+                if (rateCat[c] < nGammaCats)
+                    *lnPriorRatio += lnNonErrRatio * nSitesOfPat[c];
+                else
+                    *lnPriorRatio += lnReadErrRatio * nSitesOfPat[c];
+                }
+            }
+        }
+    
+    /* copy new pInvar value back */
+    *GetParamVals(param, chain, state[chain]) = newP;
+
+    /* Set update flags for all partitions that share this pInvar. Note that the conditional
+       likelihood update flags for divisions have been set before we even call this function. */
+    for (i=0; i<param->nRelParts; i++)
+        TouchAllTreeNodes(&modelSettings[param->relParts[i]],chain);
+    
+    /* TODO: However, you do need to update cijk flags if this is a covarion model */
+    
+    return (NO_ERROR);
+}
+
+
 /*----------------------------------------------------------------
 |
 |   Move_Revmat_DirMix: Dirichlet proposal for REVMAT_MIX. From
