@@ -12,8 +12,8 @@ Greg           EEMDMMDEDDMEDMD
 end;
 
 begin mrbayes;
-    lset nst=1;
-    prset dimethylratepr=fixed(0.1, 0.5);
+    prset dimethylratepr=dirichlet(0.1, 0.5);
+    prset readerrpr=uniform(0, 0.05);
     showmodel;
     showparams;
     mcmc ngen=1000 samplefreq=100 burnin=100;
