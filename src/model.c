@@ -3301,7 +3301,6 @@ int DoLsetParm (char *parmName, char *tkn)
         else if (!strcmp(parmName, "Pairwise"))
             {
             if (expecting == Expecting(EQUALSIGN))
-                
                 expecting = Expecting(ALPHA);
             else if (expecting == Expecting(ALPHA))
                 {
@@ -3359,7 +3358,6 @@ int DoLsetParm (char *parmName, char *tkn)
         else if (!strcmp(parmName, "PwAlphaLike"))
             {
             if (expecting == Expecting(EQUALSIGN))
-                
                 expecting = Expecting(ALPHA);
             else if (expecting == Expecting(ALPHA))
                 {
@@ -3428,7 +3426,6 @@ int DoLsetParm (char *parmName, char *tkn)
         else if (!strcmp(parmName, "PwHotChain"))
             {
             if (expecting == Expecting(EQUALSIGN))
-                
                 expecting = Expecting(ALPHA);
             else if (expecting == Expecting(ALPHA))
                 {
@@ -3481,10 +3478,10 @@ int DoLsetParm (char *parmName, char *tkn)
         else if (!strcmp(parmName, "PwWeights"))
             {
             if (expecting == Expecting(EQUALSIGN))
-                
-                expecting = Expecting(ALPHA);
-            else if (expecting == Expecting(ALPHA))
+                expecting = Expecting(NUMBER);
+            else if (expecting == Expecting(NUMBER))
                 {
+                sscanf (tkn, "%d", &tempInt);
                 if (IsArgValid(tkn, tempStr) == NO_ERROR)
                     {
                     /*  TODO: either: 1. implement pairwise for different data partitions or 
@@ -3497,17 +3494,18 @@ int DoLsetParm (char *parmName, char *tkn)
                             {
                             if (modelSettings[i].dataType == DNA)
                                 {
-                                if (!strcmp(tempStr, "Yes"))
+                                if (tempInt!=0)
                                     {
-                                     modelSettings[i].pwWeight = YES;
+                                     modelSettings[i].usePwWeights = YES;
+                                     modelSettings[i].pwWeight=tempInt;
                                     // modelSettings->pwWeights=YES;
                                     }
                                 else
                                     {
-                                    modelSettings[i].pwWeight = NO;
+                                    modelSettings[i].usePwWeights = NO;
                                     // modelSettings->pwWeights=NO;
                                     }
-                                MrBayesPrint ("%s   Setting pw weighting flag to %d\n", spacer, modelSettings[i].pwWeight);
+                                MrBayesPrint ("%s   Setting pw weighting flag to %d\n", spacer, modelSettings[i].usePwWeights);
                                 /* 
                                 if (nApplied == 0 && numCurrentDivisions == 1)
                                 else
@@ -3537,7 +3535,7 @@ int DoLsetParm (char *parmName, char *tkn)
             }
 
         /* set  Pairwise flag (pairwise) **********************************************************************/
-        else if (!strcmp(parmName, "NumDataSplits"))
+        else if (!strcmp(parmName, "Nsplits"))
             {
             if (expecting == Expecting(EQUALSIGN))
                 expecting = Expecting(NUMBER);
@@ -3555,7 +3553,7 @@ int DoLsetParm (char *parmName, char *tkn)
                             if (nApplied == 0 && numCurrentDivisions == 1)
                                 MrBayesPrint ("%s   Setting Numdatasplits to %d\n", spacer, modelParams[i].numDataSplits);
                             else
-                                MrBayesPrint ("%s   Setting Numdatasplits to %d for partition %d\n", spacer, modelParams[i].numGammaCats, i+1);
+                                MrBayesPrint ("%s   Setting Numdatasplits to %d for partition %d\n", spacer, modelParams[i].numDataSplits, i+1);
                             }
                         }
                     }
@@ -3564,9 +3562,36 @@ int DoLsetParm (char *parmName, char *tkn)
                     MrBayesPrint ("%s   Invalid Numdatasplits argument (should be between 2 and %d)\n", spacer, MAX_DATA_SPLITS);
                     return (ERROR);
                     }
+                expecting = Expecting(PARAMETER) | Expecting(SEMICOLON); 
                 }
+            else 
+                return (ERROR);
             }
-                
+ 
+        /* set  Pairwise flag (pairwise) **********************************************************************/
+        else if (!strcmp(parmName, "Stepstilalpha"))
+            {
+            if (expecting == Expecting(EQUALSIGN))
+                expecting = Expecting(NUMBER);
+            else if (expecting == Expecting(NUMBER))
+                {
+                sscanf (tkn, "%d", &tempInt);
+                if (tempInt >= 2)
+                    {
+                    stepsTilAlpha=tempInt;
+                    MrBayesPrint ("%s   We'll estimate the pairwise adjustment weight after %d MCMC steps \n", spacer, stepsTilAlpha);
+                    }
+                else
+                    {
+                    MrBayesPrint ("%s   stepsTilAlpha should be an integer larger than 1 (recommend setting it to the anticipated burnin) \n", spacer);
+                    return (ERROR);
+                    }
+                expecting = Expecting(PARAMETER) | Expecting(SEMICOLON); 
+                }
+            else 
+                return (ERROR);
+            }
+               
         /* set Ngammacat (numGammaCats) ************************************************************/
         else if (!strcmp(parmName, "Ngammacat"))
             {
