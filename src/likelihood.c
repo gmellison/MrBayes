@@ -789,6 +789,7 @@ int CondLikeDown_Dimethyl (TreeNode *p, int division, int chain)
 {
     int             c, h, i, j, k, shortCut, *lState=NULL, *rState=NULL;
     CLFlt           *clL, *clR, *clP, *pL, *pR, *tiPL, *tiPR;
+    CLFlt           *reL, *reR;
     ModelInfo       *m;
     MrBFlt          rER;
     CLFlt           readErrProbs[9];
@@ -827,7 +828,10 @@ int CondLikeDown_Dimethyl (TreeNode *p, int division, int chain)
         {
         shortCut |= 1;
         lState = m->termState[p->left->index];
-        tiPL = pL;
+        //tiPL = pL;
+
+        reL = m->readErrCls[m->readErrClIndex[chain][p->left->index ]];
+        tiPL = reL;
         for (k=j=0; k<m->numRateCats; k++)
             {
             for (i=0; i<3; i++)
@@ -849,7 +853,9 @@ int CondLikeDown_Dimethyl (TreeNode *p, int division, int chain)
         {
         shortCut |= 2;
         rState = m->termState[p->right->index];
-        tiPR = pR;
+        // tiPR = pR;
+        reR = m->readErrCls[m->readErrClIndex[chain][p->right->index]];
+        tiPR=reR;  
         for (k=j=0; k<m->numRateCats; k++)
             {
             for (i=0; i<3; i++)
@@ -951,7 +957,6 @@ int CondLikeDown_Dimethyl (TreeNode *p, int division, int chain)
             MrBayesPrint("well here we are \n");
         }
     */
-
 
     return NO_ERROR;
 }
@@ -10849,6 +10854,10 @@ int TiProbs_Dimethyl (TreeNode *p, int division, int chain)
            }
 
         rECL=m->readErrCls[m->readErrClIndex[chain][p->index]];
+        /*  reset...  */
+        for (i=0;i<m->readErrClLength;i++)
+                rECL[i]=0.0;
+
         int tipIndex;
         for (k=index=tipIndex=0; k<m->numRateCats; k++)
             {

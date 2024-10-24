@@ -4537,6 +4537,23 @@ void FreeChainMemory (void)
             m->condLikeIndex = NULL;
             }
 
+        if (m->readErrCls)
+            {
+            for (j=0; j<m->numReadErrCls; j++)
+                free (m->readErrCls[j]);
+            free (m->readErrCls);
+            m->readErrCls = NULL;
+            }
+
+
+        if (m->readErrClIndex)
+            {
+            for (j=0; j<numLocalChains; j++)
+                free (m->readErrClIndex[j]);
+            free (m->readErrClIndex);
+            m->readErrClIndex = NULL;
+            }
+
         if (m->condLikeScratchIndex)
             {
             free (m->condLikeScratchIndex);
@@ -5957,7 +5974,7 @@ int InitChainCondLikes (void)
             for (j=0;j<numLocalTaxa; j++) 
                 {
                 m->readErrClIndex[i][j]=reI;
-                reI+=1;
+                reI+=indexStep;
                 }
             }
 
@@ -12325,6 +12342,7 @@ int PrintSiteRates_Gen (TreeNode *p, int division, int chain)
     char            *tempStr;
     int             tempStrSize = TEMPSTRSIZE;
     ModelInfo       *m;
+    MrBFlt          alpha, beta, denom, *dimRates;
     
     tempStr = (char *) SafeMalloc((size_t)tempStrSize * sizeof(char));
     if (!tempStr)
@@ -12357,7 +12375,20 @@ int PrintSiteRates_Gen (TreeNode *p, int division, int chain)
     lnScaler = m->scalers[m->siteScalerIndex[chain]];
     
     /* find base frequencies */
-    bs = GetParamSubVals (m->stateFreq, chain, state[chain]);
+    if (m->dataType == DIMETHYL)
+        {
+        bs=SafeMalloc(m->numModelStates * sizeof(MrBFlt));
+        if (!bs) return (ERROR);
+        dimRates =  GetParamVals (m->dimethylRate, chain, state[chain]);
+        alpha = dimRates[0];
+        beta = dimRates[1];
+        denom = ((alpha + beta) * (alpha + beta));
+        bs[0] = beta*beta / denom;
+        bs[1] = 2.0*alpha*beta / denom; 
+        bs[2] = alpha*alpha / denom;
+        }
+    else 
+        bs = GetParamSubVals (m->stateFreq, chain, state[chain]);
 
     /* if covarion model, adjust base frequencies */
     if (m->switchRates != NULL)
@@ -16912,6 +16943,7 @@ int RunChain (RandLong *seed)
                 abortMove = YES;
                 }
             lnLike = LogLike(chn);                
+
             /* calculate acceptance probability */
             if (abortMove == NO)
                 {
@@ -18395,11 +18427,9 @@ int SetLikeFunctions (void)
                 m->CondLikeScaler = &CondLikeScaler_Dimethyl;
                 m->Likelihood     = &Likelihood_Dimethyl;
                 m->StateCode      = &StateCode_DIMETHYL;
-                    /*
-                m->CondLikeUp     = &CondLikeUp_Dimethyl;
-                m->PrintAncStates = &PrintAncStates_Dimethyl;
-                m->PrintSiteRates = &PrintSiteRates_Dimethyl;
-                  */
+                //m->CondLikeUp     = &CondLikeUp_Dimethyl;
+                //m->PrintAncStates = &PrintAncStates_Gen;
+                m->PrintSiteRates = &PrintSiteRates_Gen;
                 }
             }
         else if (m->dataType == STANDARD)
