@@ -8545,15 +8545,7 @@ void LaunchLogLikeForDivision(int chain, int d, MrBFlt* lnL)
                         }
                     else
                         {
-                        /*
-                        MrBayesPrint("fresh condLikes at node %d: \n", p->index);
-                        for (int i=0; i<m->condLikeLength; i++)
-                                MrBayesPrint("%3.3f  ", m->condLikes[m->condLikeIndex[chain][p->index]][i]);
-                        MrBayesPrint("\n");
-                        */
                         TIME(m->CondLikeDown (p, d, chain),CPUCondLikeDown);
-                        if (p->length > 1) 
-                            MrBayesPrint("leng prob\n");
                         }
                     }
                 else

@@ -19066,8 +19066,6 @@ int SetModelDefaults (void)
 
         SetCode (j);
         modelParams[j].nStates = NumStates (j);             /* number of states for partition             */
-        MrBayesPrint("Number States: %d\n", NumStates (j));             /* number of states for partition             */
-
 
         if (numDefinedConstraints > 0)
             modelParams[j].activeConstraints = (int *) SafeCalloc((size_t)(numDefinedConstraints), sizeof(int));  /* allocate space for active constraints (yes/no) */
