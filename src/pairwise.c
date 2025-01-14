@@ -2617,6 +2617,7 @@ int CalcPairwiseWeights (int chain) {
     ModelParams* mp;
 
     int i,j,k,l,c,c1,c2,d;
+    int p1, p2;
     int cI,dI,pI,splitI;
     int nI, nIOverall;
     int *counts, count;
@@ -2631,13 +2632,16 @@ int CalcPairwiseWeights (int chain) {
     MrBFlt theRate;
     MrBFlt rc;
     MrBFlt *p_10, *p_11, *p1_10, *p1_11, *p2_10, *p2_11; 
-    int    nidxl, nidxk;
+    int    nidx;
     MrBFlt **J, **H, **Hinv;
     MrBFlt **HiJ, *eigvals, *eigvalsc;
     int **niiIndex ;
     MrBFlt t1,t2,t3,t4;
     MrBFlt eterm;
-
+    int numBranches;
+    Tree *tree;
+    int freeBitsets;
+    int *tempPartitionPair;
 
     /*  first set up worker matrices for eigen computation */
     // set up matrices 
@@ -2650,25 +2654,25 @@ int CalcPairwiseWeights (int chain) {
         m = &modelSettings[d];
         mp = &modelParams[d];
 
+        tree = GetTree(m->brlens, chain, state[chain]);
+
         nStates = m->numModelStates;
         nSplits = mp->numDataSplits;
         nPairs = m->numPairs;
+        numBranches=numLocalTaxa*2 - 3;
 
-        if (m->usePwWeights == YES) 
-            overallPwIdx = mp->numDataSplits;
-        else 
-            overallPwIdx = mp->numDataSplits;
+        overallPwIdx = mp->numDataSplits;
 
         /*  * 
          *  Initialize necessary arrays:
          *  */
         /* initialize counts & index array */
 
-        V     = AllocateSquareDoubleMatrix(nPairs);
-        Vinv  = AllocateSquareDoubleMatrix(nPairs);
+        V     = AllocateSquareDoubleMatrix(numBranches);
+        Vinv  = AllocateSquareDoubleMatrix(numBranches);
     
-        Vc    = AllocateSquareComplexMatrix(nPairs); 
-        Vcinv = AllocateSquareComplexMatrix(nPairs);
+        Vc    = AllocateSquareComplexMatrix(numBranches); 
+        Vcinv = AllocateSquareComplexMatrix(numBranches);
 
         counts = (int*) SafeMalloc( (nSplits+1) * nPairs * nStates * nStates * sizeof(int));
         countIndex=(int**) SafeMalloc( (nSplits+1) * sizeof(int*));
@@ -2694,7 +2698,7 @@ int CalcPairwiseWeights (int chain) {
 
         niiIndex=(int**) SafeMalloc( (nSplits+1) * sizeof(int*));
         for (i=0; i<(nSplits+1); i++)
-                niiIndex[i]=(int*) SafeMalloc( nPairs * sizeof(int));
+            niiIndex[i]=(int*) SafeMalloc( nPairs * sizeof(int));
 
         index=0;
         indexStep=1;
@@ -2710,10 +2714,10 @@ int CalcPairwiseWeights (int chain) {
         /* init arrays for derivatives  */
         p_10 = (MrBFlt*) SafeMalloc( nPairs * sizeof(MrBFlt));
         p_11 = (MrBFlt*) SafeMalloc( nPairs * sizeof(MrBFlt));
-        p1_10 = (MrBFlt*) SafeMalloc( nPairs * sizeof(MrBFlt));
-        p1_11 = (MrBFlt*) SafeMalloc( nPairs * sizeof(MrBFlt));
-        p2_10 = (MrBFlt*) SafeMalloc( nPairs * sizeof(MrBFlt));
-        p2_11 = (MrBFlt*) SafeMalloc( nPairs * sizeof(MrBFlt));
+        p1_10 = (MrBFlt*) SafeMalloc(nPairs * sizeof(MrBFlt));
+        p1_11 = (MrBFlt*) SafeMalloc(nPairs * sizeof(MrBFlt));
+        p2_10 = (MrBFlt*) SafeMalloc(nPairs * sizeof(MrBFlt));
+        p2_11 = (MrBFlt*) SafeMalloc(nPairs * sizeof(MrBFlt));
 
         for (k=0;k<nPairs;k++)
             {
@@ -2725,21 +2729,48 @@ int CalcPairwiseWeights (int chain) {
             p2_11[k] =0.0;            
             }
 
-        /*  init arrays for hessian and jacobian */
-        H = (MrBFlt**) SafeMalloc( nPairs * sizeof(MrBFlt*));
-        J = (MrBFlt**) SafeMalloc( nPairs * sizeof(MrBFlt*));
-        Hinv = (MrBFlt**) SafeMalloc( nPairs * sizeof(MrBFlt*));
-        HiJ = (MrBFlt**) SafeMalloc( nPairs * sizeof(MrBFlt*));
-        for (i=0; i<nPairs; i++) 
+        /*  init arrays for first and second derivs */
+        MrBFlt  **D1L, **D1LP;
+        D1L =  (MrBFlt**) SafeMalloc( nSplits * sizeof(MrBFlt*));
+        if (!D1L)
+            return (ERROR);
+
+        for (i=0; i<nSplits; i++) 
             { 
-            H[i]=(MrBFlt*) SafeMalloc( nPairs * sizeof(MrBFlt));
-            J[i]=(MrBFlt*) SafeMalloc( nPairs * sizeof(MrBFlt));
-            Hinv[i]=(MrBFlt*) SafeMalloc( nPairs * sizeof(MrBFlt));
-            HiJ[i]=(MrBFlt*) SafeMalloc( nPairs * sizeof(MrBFlt));
+            D1L[i]=(MrBFlt*) SafeMalloc( numBranches * sizeof(MrBFlt));
+            if (!D1L[i])
+                return (ERROR);
             }
 
-        eigvals=(MrBFlt*) SafeMalloc( nPairs * sizeof(MrBFlt));
-        eigvalsc=(MrBFlt*) SafeMalloc( nPairs * sizeof(MrBFlt));
+        D1LP =  (MrBFlt**) SafeMalloc( nSplits * sizeof(MrBFlt*));
+        if (!D1LP)
+            return (ERROR);
+
+        for (i=0; i<nSplits; i++) 
+            { 
+            D1LP[i]=(MrBFlt*) SafeMalloc( numBranches * nPairs * sizeof(MrBFlt));
+            if (D1LP[i] == NULL)
+                return (ERROR);
+            }
+
+        /*  init arrays for hessian and jacobian */
+        H =    (MrBFlt**) SafeMalloc( numBranches * sizeof(MrBFlt*));
+        J =    (MrBFlt**) SafeMalloc( numBranches * sizeof(MrBFlt*));
+        Hinv = (MrBFlt**) SafeMalloc( numBranches * sizeof(MrBFlt*));
+        HiJ =  (MrBFlt**) SafeMalloc( numBranches * sizeof(MrBFlt*));
+        for (i=0; i<nPairs; i++) 
+            { 
+            H[i]=(MrBFlt*) SafeMalloc(   numBranches * sizeof(MrBFlt));
+            J[i]=(MrBFlt*) SafeMalloc(   numBranches * sizeof(MrBFlt));
+            Hinv[i]=(MrBFlt*) SafeMalloc(numBranches * sizeof(MrBFlt));
+            HiJ[i]=(MrBFlt*) SafeMalloc( numBranches * sizeof(MrBFlt));
+            }
+
+        eigvals=(MrBFlt*) SafeMalloc( numBranches * sizeof(MrBFlt));
+        eigvalsc=(MrBFlt*) SafeMalloc( numBranches * sizeof(MrBFlt));
+
+        /* alloc helper vector for storing partition pairs   */
+        tempPartitionPair=(int*)SafeMalloc(numLocalTaxa * sizeof(int));
 
         /*  *
          *  Done initializing
@@ -2800,34 +2831,25 @@ int CalcPairwiseWeights (int chain) {
             }
 
         /*  now just calculate the pw dists */
-        MrBFlt al=*GetParamVals(m->shape,chain,state[chain]);
+        MrBFlt al;
+        if (m->shape != NULL)
+            al=*GetParamVals(m->shape,chain,state[chain]);
 
-        MrBFlt prop =  (n10[nI] * 1.0) / (n10[nI] + n11[nI]);
         for (k=0; k<nPairs; k++) 
             {   
             nI=niiIndex[nSplits][k];
+            MrBFlt prop =  (n10[nI] * 1.0) / (n10[nI] + n11[nI]);
             if (n10[nI] == 0) 
                 pwDists[k] = 0.0;
             else 
                 {
-                pwDists[k] = -1.0 * (3.0/4) * log(1.0 - (n10[nI] * 1.0) / (n10[nI] + n11[nI]));
-                //pwDists[k] = al * (3.0/4) * log( (pow(1-(4 * prop/3), -(1.0/al))) - 1.0);
+                if (m->shape != NULL)
+                    pwDists[k] = al * (3.0/4) * (pow(1-(4 * prop/3), -(1.0/al)) - 1.0);
+                else 
+                    pwDists[k] = -1.0 * (3.0/4) * log(1.0 - (n10[nI] * 1.0) / (n10[nI] + n11[nI]));
                 }
             } 
 
-//        for (k=0; k<nPairs; k++) 
-//            {   
-//            MrBayesPrint("Pair %d : ", k);
-//            MrBayesPrint("Dist = %.5f \n", pwDists[k]);
-//            for (splitI=0; splitI<=nSplits; splitI++) 
-//                {
-//                MrBayesPrint("   Split %d: ", splitI);
-//                nI=niiIndex[splitI][k];
-//                MrBayesPrint("      n11: %d", n11[nI]);
-//                MrBayesPrint("      n10: %d \n", n10[nI]);
-//                }
-//            }
-//
         /* get base rate */
         baseRate = GetRate (d, chain);
     
@@ -2844,90 +2866,156 @@ int CalcPairwiseWeights (int chain) {
         else
             catRate = &theRate;
 
+        /*  set up pair/branch indicator matrix:  */
+        int nLongsNeeded=((numLocalTaxa-1)/nBitsInALong)+1;
+
+        int **PairBranch;
+        PairBranch = SafeMalloc( numBranches * sizeof(int*)) ;
+        if (!PairBranch) 
+            return(ERROR);
+
+        for (i=0; i<numBranches; i++) 
+            {
+            PairBranch[i] = SafeMalloc(nPairs * sizeof(int));
+            if(!PairBranch[i])
+                return(ERROR);
+            }
+
+        int l1;
+        int l2;
+        TreeNode *p;
+
+        // Make sure we have bitfields allocated and set
+        if (tree->bitsets == NULL)
+            {
+            AllocateTreePartitions(tree);
+            freeBitsets = YES;
+            }
+        else
+            {
+            ResetTreePartitions(tree);   // just in case
+            freeBitsets = NO;
+            }
+
+        for (i=index=0;i<tree->nNodes;i++)
+            {
+            p=&(tree->nodes[i]);
+            if (AreDoublesEqual(p->length,0.0,ETA)) continue;
+
+            for (j=0;j<numLocalTaxa;j++) /*  reset helper array */
+                tempPartitionPair[j]=1;
+
+            for (l1=FirstTaxonInPartition(p->partition, nLongsNeeded); 
+                 l1<numLocalTaxa; 
+                 l1=NextTaxonInPartition(l1, p->partition, nLongsNeeded))
+                tempPartitionPair[l1]=0; /*  now temp array has 1s for taxa not in partition */
+
+            /*  now loop again and fill in 1s for pairs with a taxa in this partition and one not in partition */
+            for (l2=FirstTaxonInPartition(p->partition, nLongsNeeded); 
+                 l2<numLocalTaxa; 
+                 l2=NextTaxonInPartition(l2, p->partition, nLongsNeeded))
+                { 
+                for (j=0;j<numLocalTaxa;j++)
+                    {
+                    if (j == l2) continue;
+                    if (tempPartitionPair[j] == 1) 
+                        {
+                        k=pairIdx(l2,j,numLocalTaxa);
+                        PairBranch[index][k]=1; /*  both taxa below node, so node not in pair path  */
+                        }
+                    }
+                }
+            index++; 
+            }
+
+        /*  calculate derivatives needed for J/H */
         for (k=0; k<nPairs; k++) 
             {
-            /*  calculate derivatives needed for J/H */
             int nRates=m->numRateCats; 
             for (l=0; l<nRates; l++)
                 {
                 rc =  baseRate * catRate[l];
                 eterm = exp(-(4.0/3)*rc*pwDists[k]);
-                p_10[k] +=  (1.0/nRates) * ((3.0/4) - (3.0/4) * eterm);
-                p_11[k] +=  (1.0/nRates) * ((1.0/4) + (3.0/4) * eterm);
-                p1_11[k] += (-1.0 / nRates) * rc * eterm;
+                p_10[k]  +=  (1.0/nRates) * ((3.0/4) - (3.0/4) * eterm);
+                p_11[k]  +=  (1.0/nRates) * ((1.0/4) + (3.0/4) * eterm);
                 p1_10[k] += ( 1.0 / nRates) * rc * eterm;
-                p2_11[k] += ( 4.0 / (3.0*nRates)) * rc*rc * eterm;
-                p2_10[k] += (-4.0 / (3.0*nRates)) * rc*rc * eterm;
+                p1_11[k] += (-1.0 / nRates) * rc * eterm;
+                //p2_10[k] += (-4.0 / (3.0*nRates)) * rc*rc * eterm;
+                //p2_11[k] += ( 4.0 / (3.0*nRates)) * rc*rc * eterm;
                 }
-          }
-
-        //for (k=0; k<nPairs; k++) 
-        //    {
-        //        MrBayesPrint("Derivs, pair %d: p10=%f, p11=%f, p1_10=%f, p1_11=%f, p2_10=%f, p2_11=%f \n", k,
-        //        p_10[k]  ,
-        //        p_11[k]  ,
-        //        p1_11[k] ,
-        //        p1_10[k] ,
-        //        p2_11[k] ,
-        //        p2_10[k] );
-        //   }
-
-                /*  Now fill in the Hessian and Jacobian */
-        for (k=0; k<nPairs; k++)
-            {
-            H[k][k]=0.0;
-            for (i=0; i<nSplits; i++)
-                {
-                nidxk=niiIndex[i][k];
-                t1 = (p2_11[k] / p_11[k] - p1_11[k]/(p_11[k]*p_11[k]));
-                t2 = (p2_10[k] / p_10[k] - p1_10[k]/(p_10[k]*p_10[k]));
-                H[k][k] -= (1.0/nSplits) * (n11[nidxk] * t1 + n11[nidxk] * t2) ;
-                }
-            Hinv[k][k] = 1.0 / H[k][k] ;
-           
-            /*  fill in jacobian */
-            MrBayesPrint("J[%d][.] = ",k);
-            for (l=k; l<nPairs; l++)
-                {
-                t1 = (p1_11[k] * p1_11[l] / (p_11[k] * p_11[l]));
-                t2 = (p1_11[k] * p1_10[l] / (p_11[k] * p_10[l]));
-                t3 = (p1_10[k] * p1_11[l] / (p_10[k] * p_11[l]));
-                t4 = (p1_10[k] * p1_10[l] / (p_10[k] * p_10[l]));
-
-                J[k][l] = 0.0;
-                for (i=0; i<nSplits; i++)
-                    {
-                    nidxl=niiIndex[i][l];
-                    nidxk=niiIndex[i][k];
-                    J[k][l] += (1.0/nSplits) * (n11[nidxk] * n11[nidxl] * t1 + n11[nidxk] * n10[nidxl] * t2 + 
-                                                n10[nidxk] * n11[nidxl] * t3 + n10[nidxk] * n10[nidxl] * t4);
-                    }
-                if (l != k) 
-                    J[l][k]=J[k][l];
-                MrBayesPrint("  % .3f", J[k][l]);
-                }
-                MrBayesPrint("\n \n");
             }
 
-//        for (k=0; k<nPairs; k++)
-//            {
-//            //MrBayesPrint("H[%d][%d] = %f \n",k,k,H[k][k]);
-//            MrBayesPrint("Hi[%d][%d] = %f \n",k,k,Hinv[k][k]);
-//            }
+        /*  Now compute first derivs of composite ll derivs  */
+        for (i=index=0; i<numBranches; i++)
+            {
+            for (k=0; k<nPairs; k++)
+                {
+                t1 = (p1_11[k] / p_11[k]);
+                t2 = (p1_10[k] / p_10[k]);
+
+                for (d=0; d<nSplits; d++)
+                    {
+                    nidx=niiIndex[d][k];
+
+                    if (PairBranch[i][k]==1) 
+                        {
+                        /*  fill in derivative arrays */
+                        D1L[d][i] += (n11[nidx] * t1 + n10[nidx] * t2);
+                        D1LP[d][index] = (n11[nidx] * t1 + n10[nidx] * t2);
+                        }
+                    }
+                index++;
+                }
+            }
+
+
+        /*  fill in J and H  */
+        for (i=0; i<numBranches; i++)
+            {
+            for (j=i; j<numBranches; j++)
+                {
+                         
+                H[i][j]=0.0;
+                J[i][j]=0.0;
+
+                for (d=0; d<nSplits; d++)
+                    {
+                    nidx=niiIndex[d][k];
+                    J[i][j] += (1.0/nSplits) * D1L[d][i] * D1L[d][j] ;
+                    for (k=0; k<nPairs; k++ )
+                        {
+                        if (PairBranch[i][k] == 1 && PairBranch[j][k]==1)
+                            H[i][j] += (1.0/nSplits) * D1LP[d][nPairs*i+k] * D1LP[d][nPairs*j+k] ;
+                        }
+                    }
+
+                if (i != j) 
+                    {
+                    J[j][i]=J[i][j];
+                    H[j][i]=H[i][j];
+                    }
+
+                }
+            }
 
         /*  compute  H^-1 * J and the eigenvalues:  */
-        MultiplyMatrices(nPairs, Hinv, J, HiJ);
-        for (k=0; k<nPairs; k++)
+        MrBFlt *dw= SafeMalloc((size_t)nPairs*(sizeof(MrBFlt)));
+        int    *iw= SafeMalloc((size_t)nPairs*(sizeof(int)));
+
+        InvertMatrix(numBranches, H, dw,iw, Hinv);
+        MultiplyMatrices(numBranches, Hinv, J, HiJ);
+
+        for (k=0; k<numBranches; k++)
             {
             MrBayesPrint("HiJ[%d][.] =",k);
-            for (l=0; l<nPairs; l++)
+            for (l=0; l<numBranches; l++)
                 {
                 MrBayesPrint("  % .3f", HiJ[k][l]);
                 }
                 MrBayesPrint("\n");
             }
 
-        int isComplex=GetEigens(nPairs,HiJ,eigvals,eigvalsc,V,Vinv,Vc,Vcinv);
+        int isComplex=GetEigens(numBranches,HiJ,eigvals,eigvalsc,V,Vinv,Vc,Vcinv);
         MrBayesPrint("isComplex: %d \n", isComplex);
 
         MrBFlt eigsum=0.0 ;
@@ -2940,13 +3028,15 @@ int CalcPairwiseWeights (int chain) {
             eigsum2 += eigvals[i] * eigvals[i];
         }
 
-        em = eigsum/(1.0*(numTaxa+2)); 
+        em = eigsum/(1.0*(numBranches+2)); 
         v = (eigsum * eigsum) / eigsum2;
+
+        m->pwWeight= 2.0 / (numPairs * (numPairs - 1));
 
         if (m->usePwWeights == 1)
             m->pwWeight=(1.0) / em;
-        else 
-            m->pwWeight=v / (1.0*numTaxa+2*em);
+        else if (m->usePwWeights == 2)  
+            m->pwWeight=v / (1.0*numBranches+2*em);
 
         MrBayesPrint("pw weight: %f", m->pwWeight);
 
@@ -2974,17 +3064,25 @@ int CalcPairwiseWeights (int chain) {
         free(p_11 );
         free(p1_10); 
         free(p1_11);  
-        free(p2_10); 
-        free(p2_11);  
+        //free(p2_10); 
+        //free(p2_11);  
                       
         /*  hessian and jacobian */
-        for (i=0; i<nPairs; i++) 
+        for (i=0; i<numBranches; i++) 
             { 
             free(H[i]);
             free(J[i]);
             free(HiJ[i]);
             free(Hinv[i]);
             }
+
+        for (i=0; i<nSplits; i++) 
+            { 
+            free(D1L[i]);
+            free(D1LP[i]);
+            }
+        free(D1L);
+        free(D1LP);
 
         free(H);
         free(J);
@@ -2993,6 +3091,7 @@ int CalcPairwiseWeights (int chain) {
 
         free(eigvals);
         free(eigvalsc);
+
 
         } /* end loop over numCurrentDivisions */
 
