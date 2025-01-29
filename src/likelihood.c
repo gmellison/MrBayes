@@ -7873,7 +7873,16 @@ void LaunchLogLikeForDivision(int chain, int d, MrBFlt* lnL)
             }
         m->upDateAll = YES;
         }
-    
+   
+    if (m->usePairwise) 
+        {
+        CalcPairwiseDists_ReverseDownpass(tree,d,chain);
+        m->PwTiProbs(d,chain);
+        m->DoubletProbs(d,chain);
+        m->PwLikelihood(d,chain,lnL);
+        return;
+        }
+
 #   if defined (BEAGLE_ENABLED)
     if (m->useBeagle == YES)
         {
