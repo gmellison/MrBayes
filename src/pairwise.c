@@ -2475,7 +2475,7 @@ int Likelihood_Pairwise (int division, int chain, MrBFlt *lnL)
                 else 
                     like+=nijk*log(pijk);         
  
-            /* check against LIKE_EPSILON (values close to zero are problematic) */
+                /* check against LIKE_EPSILON (values close to zero are problematic) */
                 if (pijk < LIKEPW_EPSILON)
                     {
                     (*lnL) = MRBFLT_NEG_MAX;
@@ -2491,7 +2491,6 @@ int Likelihood_Pairwise (int division, int chain, MrBFlt *lnL)
                 }
             }
         }
-    MrBayesPrint("like = %f \n", *lnL);
 
     return (NO_ERROR);
 }
