@@ -22,10 +22,14 @@ Saimiri_sciureus    AAGCTTCACCGGC
 end;
 
 begin mrbayes;
-    lset nst=1 nucmodel=4by4  rates=gamma;
-    lset pairwise=yes pwweights=2;
+    log start filename=log;
+    lset nst=1 rates=gamma;
+    lset usepairwise=yes;
     prset shapepr=exponential(1);
-    mcmc ngen=10000 samplefreq=1000 burnin=1000;
+    mcmcp initrunngen=10000 initrunfname=test initrunburnin=5000 initsubmod=yes ; 
+    mcmcp checkpoint=yes;
+    mcmc ngen=10000 samplefreq=1000 burnin=1000 ;
     sump;
     sumt;
+    log stop;
 end;
