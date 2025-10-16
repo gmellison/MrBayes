@@ -1593,7 +1593,6 @@ int CalcPairwiseDists_ReverseDownpass(Tree *t, int division, int chain)
     for (k=0;k<t->nNodes;k++)
             distsTemp[k]=(MrBFlt*)malloc(t->nNodes*sizeof(MrBFlt));
 
-
     /*  make sure dists are init to 0  */
     for (i=0; i<t->nNodes; i++) 
         for (j=0; j<t->nNodes; j++)
@@ -1602,6 +1601,7 @@ int CalcPairwiseDists_ReverseDownpass(Tree *t, int division, int chain)
     /* loop over all nodes  */
     for (i=(t->nNodes)-2; i>=0; i--)
         {
+
         p = t->allDownPass[i];
         a = p->anc->index;   
         d = p->index;
@@ -1684,10 +1684,57 @@ int CalcPairwiseDists_ReverseDownpass(Tree *t, int division, int chain)
     //    }
     ////MrBayesPrint("   uniquedists: %d \n", m->numUniqueDists[chain]);
 
+
+    ShowTree(t);
+
+
     /*  free temp array and return pointer to taxa pairwise distances */
     for (k=0;k<t->nNodes;k++)
         free(distsTemp[k]);
     free(distsTemp);
+
+    for (i=0; i<t->nNodes; i++)
+        {
+        p = t->allDownPass[i];
+
+        /* find length */
+        if (m->cppEvents != NULL)
+            {
+            x = GetParamSubVals (m->cppEvents, chain, state[chain])[p->index];
+            }
+        else if (m->tk02BranchRates != NULL)
+            {
+            x = GetParamSubVals (m->tk02BranchRates, chain, state[chain])[p->index];
+            }
+        else if (m->wnBranchRates != NULL)
+            {
+            x = GetParamSubVals (m->wnBranchRates, chain, state[chain])[p->index];
+            }
+        else if (m->ilnBranchRates != NULL)
+            {
+            x = GetParamSubVals (m->ilnBranchRates, chain, state[chain])[p->index];
+            }
+        else if (m->igrBranchRates != NULL)
+            {
+            x = GetParamSubVals (m->igrBranchRates, chain, state[chain])[p->index];
+            }
+        else if (m->mixedBrchRates != NULL)
+            {
+            x = GetParamSubVals (m->mixedBrchRates, chain, state[chain])[p->index];
+            }
+        else
+            x = p->length;
+        MrBayesPrint("%s bl %d: %f \n", spacer, i , x);
+        }
+
+    for (i=0; i<(numExtNodes-1); i++) {
+        for (j=i+1; j<numExtNodes; j++) {
+            MrBayesPrint("%s pw dist %d: %f \n", spacer, pairIdx(i,j,numExtNodes), dists[pairIdx(i,j,numExtNodes)]);
+        }
+    }
+
+
+
 
     return(NO_ERROR);
 }
@@ -4086,7 +4133,7 @@ int CalcPairwiseWeights_GTR (int chain) {
         if (m->usePwWeights == 1)
             pwWeight[d]=(1.0) / em;
         else if (m->usePwWeights == 2)  
-            pwWeight[d]=v / (1.0*numBranches+2.0*em);
+            pwWeight[d]=v;
 
         MrBayesPrint("%s pw weight: %f \n", spacer, pwWeight[d]);
 
@@ -4167,6 +4214,5 @@ int CalcPairwiseWeights_GTR (int chain) {
 
 
         } /* end loop over numCurrentDivisions */
-
     return(0);
 }
